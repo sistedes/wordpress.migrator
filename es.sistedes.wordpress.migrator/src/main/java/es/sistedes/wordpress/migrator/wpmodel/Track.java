@@ -1,4 +1,4 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

@@ -1,4 +1,4 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,7 +19,7 @@ public class BDSistedes {
 
 	public BDSistedes(URL baseUrl) throws IOException {
 		URL url = new URL(baseUrl.getProtocol(), baseUrl.getHost(), baseUrl.getPort(),
-				Endpoints.LIBRARY_ENDPOINT + String.format(Endpoints.LIBRARY_PARENT_QUERY, "0"));
+				WorpressEndpoints.LIBRARY_ENDPOINT + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, "0"));
 		
 		List<Library> libraries = Arrays.asList(new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Library[].class));
 		

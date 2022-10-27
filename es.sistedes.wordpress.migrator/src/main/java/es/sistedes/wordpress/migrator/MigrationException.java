@@ -11,7 +11,7 @@
 package es.sistedes.wordpress.migrator;
 
 /**
- * Signals that an {@link Exception} of some sort has occurred during conversion
+ * Signals that an {@link Exception} of some sort has occurred during the migration
  *
  * @author agomez
  */

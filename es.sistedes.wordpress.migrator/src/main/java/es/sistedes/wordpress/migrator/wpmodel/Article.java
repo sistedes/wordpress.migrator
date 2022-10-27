@@ -1,5 +1,7 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +14,7 @@ public class Article {
 
 	// BEGIN: JSON fields
 	private String id;
+	private String link;
 	private Map<String, String> title;
 	private Map<String, Map<String, String>[]> _links;
 	private Map<String, String> content;
@@ -49,6 +52,19 @@ public class Article {
 		return Arrays.asList(metadata.get("keywords") != null ? metadata.get("keywords").split(",") : new String[] {});
 	}
 
+	public String getHandle() {
+		return "https://hdl.handle.net/" + StringUtils.trimToNull(metadata.get("handle"));
+	}
+
+	public String getDocumentUrl() {
+		try {
+			URL url = new URL(link);
+			return new URL(url.getProtocol(), url.getHost(), url.getPort(), StringUtils.trimToNull(metadata.get("paper_pdf_file"))).toString();
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public List<Author> getAuthors() {
 		if (authors == null) {
 			authors = new ArrayList<>();

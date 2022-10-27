@@ -11,10 +11,7 @@
 
 package es.sistedes.wordpress.migrator;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.net.URL;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,7 +23,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.io.IOUtils;
 
 /**
  * CLI invocator
@@ -38,8 +34,8 @@ public class CliLauncher {
 
 	private static final Logger LOGGER = Logger.getLogger(CliLauncher.class.getName());
 
-	private static final String URL = "u";
-	private static final String URL_LONG = "url";
+	private static final String INPUT = "i";
+	private static final String INPUT_LONG = "input";
 	private static final String CONFERENCES = "c";
 	private static final String CONFERENCES_LONG = "conferences";
 	private static final String START_YEAR = "s";
@@ -48,8 +44,14 @@ public class CliLauncher {
 	private static final String END_YEAR_LONG = "end-year";
 	private static final String OUTPUT = "o";
 	private static final String OUTPUT_LONG = "output";
-	private static final String DELAY = "d";
-	private static final String DELAY_LONG = "delay-long";
+	private static final String USER = "u";
+	private static final String USER_LONG = "user";
+	private static final String PASSWORD = "p";
+	private static final String PASSWORD_LONG = "password";
+	private static final String WAITING_TIME = "w";
+	private static final String WAITING_TIME_LONG = "waiting-time";
+	private static final String DRY_RUN = "d";
+	private static final String DRY_RUN_LONG = "dry-run";
 
 	private static final Options options = new Options();
 
@@ -88,35 +90,36 @@ public class CliLauncher {
 				throw e;
 			}
 
-			Migrator migrator = new Migrator(new java.net.URL(commandLine.getOptionValue(URL)));
+			URL input = new URL(commandLine.getOptionValue(INPUT));
+			URL output = new URL(commandLine.getOptionValue(OUTPUT));
+			String user = commandLine.getOptionValue(USER);
+			String password = commandLine.getOptionValue(PASSWORD);
+			
+			Migrator migrator = new Migrator(input, output, user, password);
 
-			if (commandLine.hasOption(DELAY)) {
-				DelayedStreamOpener.setDelay(Integer.parseInt(commandLine.getOptionValue(DELAY)));
+			if (commandLine.hasOption(WAITING_TIME)) {
+				DelayedStreamOpener.setDelay(Integer.parseInt(commandLine.getOptionValue(WAITING_TIME)));
 			}
 			
 			if (commandLine.hasOption(START_YEAR)) {
-				migrator.putOption(MigratorOptions.START_YEAR, Integer.parseInt(commandLine.getOptionValue(START_YEAR)));
+				migrator.putOption(Migrator.Options.START_YEAR, Integer.parseInt(commandLine.getOptionValue(START_YEAR)));
 			}
 
 			if (commandLine.hasOption(END_YEAR)) {
-				migrator.putOption(MigratorOptions.END_YEAR, Integer.parseInt(commandLine.getOptionValue(END_YEAR)));
+				migrator.putOption(Migrator.Options.END_YEAR, Integer.parseInt(commandLine.getOptionValue(END_YEAR)));
 			}
 			
 			if (commandLine.hasOption(CONFERENCES)) {
-				migrator.putOption(MigratorOptions.CONFERENCES, commandLine.getOptionValues(CONFERENCES));
+				migrator.putOption(Migrator.Options.CONFERENCES, commandLine.getOptionValues(CONFERENCES));
+			}
+
+			if (commandLine.hasOption(DRY_RUN)) {
+				migrator.putOption(Migrator.Options.DRY_RUN, commandLine.hasOption(DRY_RUN));
 			}
 			
-			OutputStream output = System.out;
-			if (commandLine.hasOption(OUTPUT)) {
-				output = new FileOutputStream(new File(commandLine.getOptionValue(OUTPUT)));
-			} 
-
-			try {
-				migrator.serialize(output);
-			} finally {
-				IOUtils.closeQuietly(output);
-			}
-		} catch (MigrationException | FileNotFoundException e) {
+			migrator.crawl();
+			
+		} catch (MigrationException e) {
 			printError("ERROR: " + e.getLocalizedMessage());
 			throw e;
 		}
@@ -150,11 +153,11 @@ public class CliLauncher {
 
 	private static void configureOptions(Options options) {
 		// @formatter:off
-		Option hostOpt = Option
-				.builder(URL)
-				.longOpt(URL_LONG)
-				.argName("base url")
-				.desc("Base URL of the Wordpress SISTEDES Digital Library")
+		Option inputOpt = Option
+				.builder(INPUT)
+				.longOpt(INPUT_LONG)
+				.argName("input-url")
+				.desc("Base URL of the Wordpress Sistedes Digital Library to read")
 				.numberOfArgs(1)
 				.required()
 				.build();
@@ -183,29 +186,58 @@ public class CliLauncher {
 				.numberOfArgs(Option.UNLIMITED_VALUES)
 				.build();
 		
-		Option outputOpt = Option
-				.builder(OUTPUT)
-				.longOpt(OUTPUT_LONG)
-				.argName("output file")
-				.desc("The output file (optional, stdout will be used if no file is specified)")
-				.numberOfArgs(1)
-				.build();
-		
-		Option delayOpt = Option
-				.builder(DELAY)
-				.longOpt(DELAY_LONG)
+		Option waitingOpt = Option
+				.builder(WAITING_TIME)
+				.longOpt(WAITING_TIME_LONG)
 				.argName("delay")
 				.desc("Time to wait (in ms) between connections to the Sistedes Digital Library to avoid flooding it (optional, no delay if not set)")
 				.numberOfArgs(1)
 				.build();
+
+		Option outputOpt = Option
+				.builder(OUTPUT)
+				.longOpt(OUTPUT_LONG)
+				.argName("output-url")
+				.desc("Base URL of the DSpace Sistedes Digital Library to write")
+				.numberOfArgs(1)
+				.required()
+				.build();
+
+		Option userOpt = Option
+				.builder(USER)
+				.longOpt(USER_LONG)
+				.argName("user")
+				.desc("User of the DSpace Sistedes Digital Library with write privileges")
+				.numberOfArgs(1)
+				.required()
+				.build();
+
+		Option passwordOpt = Option
+				.builder(PASSWORD)
+				.longOpt(PASSWORD_LONG)
+				.argName("password")
+				.desc("Password of the user")
+				.numberOfArgs(1)
+				.required()
+				.build();
+		
+		Option dryRunOpt = Option
+				.builder(DRY_RUN)
+				.longOpt(DRY_RUN_LONG)
+				.desc("Do not perform any changes in the target DSpace instance")
+				.numberOfArgs(0)
+				.build();
 		// @formatter:on
 
-		options.addOption(hostOpt);
+		options.addOption(inputOpt);
 		options.addOption(startYearOpt);
 		options.addOption(endYearOpt);
 		options.addOption(conferencesOpt);
+		options.addOption(waitingOpt);
 		options.addOption(outputOpt);
-		options.addOption(delayOpt);
+		options.addOption(userOpt);
+		options.addOption(passwordOpt);
+		options.addOption(dryRunOpt);
 	}
 
 	/**
@@ -216,7 +248,7 @@ public class CliLauncher {
 	 * @param <T>
 	 */
 	private static class OptionComarator<T extends Option> implements Comparator<T> {
-		private static final String OPTS_ORDER = "ucseod";
+		private static final String OPTS_ORDER = "icseoupwd";
 
 		@Override
 		public int compare(T o1, T o2) {

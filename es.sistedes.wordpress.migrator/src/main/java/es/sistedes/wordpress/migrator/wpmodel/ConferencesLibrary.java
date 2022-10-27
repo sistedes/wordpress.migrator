@@ -1,4 +1,4 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -21,7 +21,7 @@ public class ConferencesLibrary extends Library {
 	public List<Conference> getConferences() throws IOException {
 		if (conferences == null) {
 			try {
-				URL url = new URL(getCollectionUrl() + String.format(Endpoints.LIBRARY_PARENT_QUERY, getId()));
+				URL url = new URL(getCollectionUrl() + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, getId()));
 				this.conferences = Collections
 						.unmodifiableList(Arrays.asList(new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Conference[].class)));
 			} catch (MalformedURLException e) {

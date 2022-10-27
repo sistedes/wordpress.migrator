@@ -1,4 +1,4 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.util.Map;
 
@@ -7,6 +7,7 @@ public class Library {
 	// BEGIN: JSON fields
 	private String id;
 	private Map<String, String> title; 
+	private Map<String, String> content; 
 	private Map<String, Map<String, String>[]> _links;
 	// END: JSON fields
 
@@ -16,6 +17,10 @@ public class Library {
 
 	public String getTitle() {
 		return title.get("rendered");
+	}
+	
+	public String getDescription() {
+		return content.get("rendered");
 	}
 
 	public String getCollectionUrl() {

@@ -1,4 +1,4 @@
-package es.sistedes.wordpress.migrator.model;
+package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,7 +31,7 @@ public class Edition extends Track {
 	public List<Track> getTracks() throws IOException {
 		if (tracks == null) {
 			try {
-				URL url = new URL(getCollectionUrl() + String.format(Endpoints.LIBRARY_PARENT_QUERY, getId()));
+				URL url = new URL(getCollectionUrl() + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, getId()));
 				this.tracks = Collections.unmodifiableList(Arrays.asList(new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Track[].class)));
 			} catch (MalformedURLException e) {
 				// Should not happen...
