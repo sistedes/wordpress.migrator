@@ -1,6 +1,10 @@
 package es.sistedes.wordpress.migrator.dsmodel;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -8,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.gson.annotations.SerializedName;
 
 public class Metadata {
+	
+	private volatile static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T00:00:00Z'");
 	
 	// BEGIN: JSON fields
 	@SerializedName("dc.title")
@@ -30,6 +36,12 @@ public class Metadata {
 	
 	@SerializedName("dc.rights")
 	private List<DublinCoreBasic> rights = new ArrayList<>();
+
+	@SerializedName("dc.date.accessioned")
+	private List<DublinCoreBasic> datesAccessioned = new ArrayList<>();
+
+	@SerializedName("dc.date.available")
+	private List<DublinCoreBasic> datesAvailable = new ArrayList<>();
 	// END: JSON fields
 	
 	
@@ -73,6 +85,14 @@ public class Metadata {
 		this.rights.add(new DublinCoreBasic(rights));
 	}
 	
+	public void setDate(Date date) {
+		if (date == null) return;
+		this.datesAccessioned.clear();
+		this.datesAvailable.clear();
+		this.datesAccessioned.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
+		this.datesAvailable.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
+	}
+	
 	public String getAbstract() {
 		return abstracts.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
@@ -96,4 +116,11 @@ public class Metadata {
 	public String getRights() {
 		return rights.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
+	
+	public Date getDate() {
+		return datesAvailable.stream().findFirst().map(d ->  {
+			try { return DATE_FORMAT.parse(d.getValue()); } catch (ParseException e) { throw new RuntimeException(e); }
+		}).orElse(null);
+	}
+	
 }

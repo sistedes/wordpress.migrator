@@ -10,6 +10,7 @@ public abstract class AbstractDSpaceEntity {
 	
 	// BEGIN: JSON fields
 	protected String id;
+	protected String uuid;
 	protected String name;
 	protected String handle;
 	protected Metadata metadata = new Metadata(); 

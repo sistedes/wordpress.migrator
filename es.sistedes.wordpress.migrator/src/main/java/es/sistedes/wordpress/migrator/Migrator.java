@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -185,14 +187,14 @@ public class Migrator {
 								continue;
 							}
 							for (Track track : edition.getTracks()) {
-								logger.debug("[>TRACK] Starting migration of " + track.getTitle());
-								Collection collection = createCollection(childCommunity, track);
+								logger.info("[>TRACK] Starting migration of " + track.getTitle());
+								Collection collection = createCollection(childCommunity, track, edition.getDate());
 								for (Article article : track.getArticles()) {
 									logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
 											+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
 									createItem(collection, article);
 								}
-								logger.debug("[<TRACK] Migration of '" + track.getTitle() + "' finished");
+								logger.info("[<TRACK] Migration of '" + track.getTitle() + "' finished");
 							}
 							logger.info("[<EDITION] Migration of '"  + edition.getTitle() + "' finished");
 						} else {
@@ -271,9 +273,9 @@ public class Migrator {
 		return community;
 	}
 
-	private Collection createCollection(Community parent, Track track) throws MigrationException, IOException, ParseException, URISyntaxException {
+	private Collection createCollection(Community parent, Track track, Date date) throws MigrationException, IOException, ParseException, URISyntaxException {
 		
-		Collection collection = Collection.from(parent, track);
+		Collection collection = Collection.from(parent, track, date);
 		
 		if (!isDryRun()) {
 			try (CloseableHttpClient client = httpClientBuilder.build()) {
@@ -306,7 +308,7 @@ public class Migrator {
 	
 	private Item createItem(Collection parent, Article article) throws MigrationException, IOException, ParseException, URISyntaxException {
 		
-		Item item = Item.from(article);
+		Item item = Item.from(parent, article);
 		
 		if (!isDryRun()) {
 			try (CloseableHttpClient client = httpClientBuilder.build()) {
@@ -321,9 +323,31 @@ public class Migrator {
 
 				try (CloseableHttpResponse response = client.execute(post)) {
 					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
-						throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}: {2}",
+						throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}: {2}",
 								article, response.getCode(), item.toJson()));
 					} else if (response.getCode() != HttpStatus.SC_CREATED) {
+						throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}.",
+								article, response.getCode()));
+					}
+					item = Item.fromHttpEntity(response.getEntity());
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+					}
+				}
+				// Now that the item has been already created, rewrite it 
+				item.setDate(parent.getDate());
+				item.setUri(article.getHandle());
+
+				HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + item.getId());
+				put.setHeader(X_XSRF_TOKEN, xsrfToken);
+				put.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+				put.setEntity(item.toHttpEntity());
+				
+				try (CloseableHttpResponse response = client.execute(put)) {
+					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+						throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}: {2}",
+								article, response.getCode(), item.toJson()));
+					} else if (response.getCode() != HttpStatus.SC_OK) {
 						throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}.",
 								article, response.getCode()));
 					}

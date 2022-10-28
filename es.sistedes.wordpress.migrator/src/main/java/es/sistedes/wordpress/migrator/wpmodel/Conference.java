@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
@@ -32,8 +33,9 @@ public class Conference extends Library {
 	public List<Edition> getEditions() throws IOException {
 		if (editions == null) {
 			try {
+				Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create();
 				URL url = new URL(getCollectionUrl() + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, getId()));
-				this.editions = Collections.unmodifiableList(Arrays.asList(new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Edition[].class)));
+				this.editions = Collections.unmodifiableList(Arrays.asList(gson.fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Edition[].class)));
 			} catch (MalformedURLException e) {
 				// Should not happen...
 				new RuntimeException(e);
