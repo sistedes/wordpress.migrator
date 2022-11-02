@@ -35,16 +35,19 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.apache.hc.core5.net.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import es.sistedes.wordpress.migrator.dsmodel.Collection;
 import es.sistedes.wordpress.migrator.dsmodel.Community;
@@ -80,6 +83,7 @@ public class Migrator {
 	private static final String COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities";
 	private static final String COLLECTIONS_ENDPOINT = API_ENDPOINT + "/core/collections";
 	private static final String ITEMS_ENDPOINT = API_ENDPOINT + "/core/items";
+	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
 
 	private class Response {
 		private class Embedded {
@@ -169,6 +173,12 @@ public class Migrator {
 		try {
 			login();
 
+			try {
+				addCustomMetadataRefinements();
+			} catch (Exception e) {
+				logger.error("Unable to add custom metadata refinements", e);
+			}
+			
 			BDSistedes bdSistedes = new BDSistedes(input);
 			ConferencesLibrary conferencesLibrary = bdSistedes.getConferencesLibrary();
 
@@ -187,7 +197,7 @@ public class Migrator {
 								continue;
 							}
 							for (Track track : edition.getTracks()) {
-								logger.info("[>TRACK] Starting migration of " + track.getTitle());
+								logger.info("[>TRACK] Starting migration of " + track.getTitle() + " (" + track.getArticles().size() + " papers)");
 								Collection collection = createCollection(childCommunity, track, edition.getDate());
 								for (Article article : track.getArticles()) {
 									logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
@@ -336,7 +346,7 @@ public class Migrator {
 				}
 				// Now that the item has been already created, rewrite it 
 				item.setDate(parent.getDate());
-				item.setUri(article.getHandle());
+				item.setUri(article.getHandleUri());
 
 				HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + item.getId());
 				put.setHeader(X_XSRF_TOKEN, xsrfToken);
@@ -386,6 +396,46 @@ public class Migrator {
 				EntityUtils.consume(response.getEntity());
 				xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
 				jwtToken = response.getFirstHeader(AUTHORIZATION_TOKEN).getValue();
+			}
+		}
+	}
+	
+	private void addCustomMetadataRefinements() throws MigrationException, IOException, URISyntaxException {
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				
+				URIBuilder builder = new URIBuilder(output + METADATAFIELDS_ENDPOINT);
+		        builder.setParameter("schemaId", "1");
+				
+				HttpPost post = new HttpPost(builder.build());
+				
+				List<JsonObject> objs = new ArrayList<>();
+				objs.add(new JsonObject());
+				objs.get(0).addProperty("element", "contributor");
+				objs.get(0).addProperty("qualifier", "email");
+				objs.get(0).addProperty("scopeNote", "When contributors are persons, use primarily to specify their e-mails.");
+
+				objs.add(new JsonObject());
+				objs.get(1).addProperty("element", "contributor");
+				objs.get(1).addProperty("qualifier", "institution");
+				objs.get(1).addProperty("scopeNote", "Use for institutions that contributed to this element. May be used to specify affiliations.");
+
+				for (JsonObject obj : objs) {
+					post.setEntity(new StringEntity(obj.toString(), ContentType.APPLICATION_JSON));
+					post.setHeader(X_XSRF_TOKEN, xsrfToken);
+					post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+	
+					try (CloseableHttpResponse response = client.execute(post)) {
+						if (response.getCode() != HttpStatus.SC_CREATED) {
+							throw new MigrationException(MessageFormat.format("Unable to create metadata element from ''{0}''. HTTP request returned code {1}.",
+									obj.toString(), response.getCode()));
+						}
+						EntityUtils.consume(response.getEntity());
+						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+							xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
+					}
+				}
 			}
 		}
 	}

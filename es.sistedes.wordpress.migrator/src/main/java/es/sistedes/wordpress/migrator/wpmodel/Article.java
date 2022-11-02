@@ -1,6 +1,7 @@
 package es.sistedes.wordpress.migrator.wpmodel;
 
-import java.net.MalformedURLException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+
+import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
 public class Article {
 
@@ -32,6 +39,10 @@ public class Article {
 		return StringUtils.trimToNull(title.get("rendered"));
 	}
 
+	public String getLink() {
+		return link;
+	}
+	
 	public String getCollectionUrl() {
 		return StringUtils.trimToNull(_links.get("collection")[0].get("href"));
 	}
@@ -51,16 +62,27 @@ public class Article {
 	public List<String> getKeywords() {
 		return Arrays.asList(metadata.get("keywords") != null ? metadata.get("keywords").split(",") : new String[] {});
 	}
-
+	
 	public String getHandle() {
+		return StringUtils.trimToNull(metadata.get("handle"));
+	}
+
+	public String getHandleUri() {
 		return "https://hdl.handle.net/" + StringUtils.trimToNull(metadata.get("handle"));
 	}
 
 	public String getDocumentUrl() {
 		try {
-			URL url = new URL(link);
-			return new URL(url.getProtocol(), url.getHost(), url.getPort(), StringUtils.trimToNull(metadata.get("paper_pdf_file"))).toString();
-		} catch (MalformedURLException e) {
+			URL postUrl = new URL(link);
+			if (StringUtils.isNotBlank(metadata.get("paper_pdf_file"))) {
+				return new URL(postUrl.getProtocol(), postUrl.getHost(), postUrl.getPort(), "/submissions/" + StringUtils.trimToNull(metadata.get("paper_pdf_file"))).toString();
+			} else if (StringUtils.isNotBlank(metadata.get("paper_pdf"))) {
+				String mediaId = StringUtils.trimToNull(metadata.get("paper_pdf"));
+				URL mediaUrl = new URL(postUrl.getProtocol(), postUrl.getHost(), postUrl.getPort(), "/wp-json/wp/v2/media/" + mediaId);
+				Media media = new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(mediaUrl)), Media.class);
+				return media.getAttachmentUrl();
+			} else return null;
+		} catch (IOException | JsonSyntaxException | JsonIOException e) {
 			throw new RuntimeException(e);
 		}
 	}

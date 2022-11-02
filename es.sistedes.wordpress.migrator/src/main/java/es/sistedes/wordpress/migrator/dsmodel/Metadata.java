@@ -34,6 +34,12 @@ public class Metadata {
 	@SerializedName("dc.contributor.author")
 	private List<DublinCoreBasic> authors = new ArrayList<>();
 	
+	@SerializedName("dc.contributor.email")
+	private List<DublinCoreBasic> emails = new ArrayList<>();
+	
+	@SerializedName("dc.contributor.institution")
+	private List<DublinCoreBasic> institutions = new ArrayList<>();
+	
 	@SerializedName("dc.rights")
 	private List<DublinCoreBasic> rights = new ArrayList<>();
 
@@ -42,6 +48,9 @@ public class Metadata {
 
 	@SerializedName("dc.date.available")
 	private List<DublinCoreBasic> datesAvailable = new ArrayList<>();
+
+	@SerializedName("dc.date.issued")
+	private List<DublinCoreBasic> datesIssued = new ArrayList<>();
 	// END: JSON fields
 	
 	
@@ -79,6 +88,14 @@ public class Metadata {
 		authors.add(new DublinCoreBasic(author, authors.size()));
 	}
 	
+	public void addEmail(String email) {
+		emails.add(new DublinCoreBasic(email, emails.size()));
+	}
+	
+	public void addInstitution(String institution) {
+		institutions.add(new DublinCoreBasic(institution, institutions.size()));
+	}
+	
 	public void setRights(String rights) {
 		if (StringUtils.isBlank(rights)) return;
 		this.rights.clear();
@@ -89,8 +106,10 @@ public class Metadata {
 		if (date == null) return;
 		this.datesAccessioned.clear();
 		this.datesAvailable.clear();
+		this.datesIssued.clear();
 		this.datesAccessioned.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 		this.datesAvailable.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
+		this.datesIssued.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 	}
 	
 	public String getAbstract() {
