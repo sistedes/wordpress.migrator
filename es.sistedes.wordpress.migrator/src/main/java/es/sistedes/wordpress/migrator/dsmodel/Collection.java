@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 
 import es.sistedes.wordpress.migrator.wpmodel.Track;
 
-public class Collection extends AbstractDSpaceEntity {
+public class Collection extends DSpaceEntity {
 
 	private final static List<String> PARTICLES = Arrays.asList(new String[] { "a", "de", "en", "por", "y", "la", "el", "ya"});
 	

@@ -1,6 +1,6 @@
 package es.sistedes.wordpress.migrator.dsmodel;
 
-public class Site extends AbstractDSpaceEntity {
+public class Site extends DSpaceEntity {
 
 	public String getHandlePrefix() {
 		return handle.split("/")[0];

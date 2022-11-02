@@ -11,6 +11,7 @@
 
 package es.sistedes.wordpress.migrator;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
@@ -31,6 +32,7 @@ import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
@@ -51,6 +53,7 @@ import com.google.gson.JsonObject;
 
 import es.sistedes.wordpress.migrator.dsmodel.Collection;
 import es.sistedes.wordpress.migrator.dsmodel.Community;
+import es.sistedes.wordpress.migrator.dsmodel.DSpaceEntity;
 import es.sistedes.wordpress.migrator.dsmodel.Item;
 import es.sistedes.wordpress.migrator.dsmodel.Site;
 import es.sistedes.wordpress.migrator.wpmodel.Article;
@@ -83,6 +86,8 @@ public class Migrator {
 	private static final String COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities";
 	private static final String COLLECTIONS_ENDPOINT = API_ENDPOINT + "/core/collections";
 	private static final String ITEMS_ENDPOINT = API_ENDPOINT + "/core/items";
+	private static final String ITEM_BUNDLES_ENDPOINT = API_ENDPOINT + "/core/items/%s/bundles";
+	private static final String BUNDLES_BITSTREAMS_ENDPOINT = API_ENDPOINT + "/core/bundles/%s/bitstreams";
 	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
 
 	private class Response {
@@ -323,47 +328,99 @@ public class Migrator {
 		if (!isDryRun()) {
 			try (CloseableHttpClient client = httpClientBuilder.build()) {
 				
-				URIBuilder builder = new URIBuilder(output + ITEMS_ENDPOINT);
-		        builder.setParameter("owningCollection", parent.getId());
-				
-				HttpPost post = new HttpPost(builder.build());
-				post.setEntity(item.toHttpEntity());
-				post.setHeader(X_XSRF_TOKEN, xsrfToken);
-				post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
-
-				try (CloseableHttpResponse response = client.execute(post)) {
-					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
-						throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}: {2}",
-								article, response.getCode(), item.toJson()));
-					} else if (response.getCode() != HttpStatus.SC_CREATED) {
-						throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}.",
-								article, response.getCode()));
-					}
-					item = Item.fromHttpEntity(response.getEntity());
-					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+				{
+					URIBuilder builder = new URIBuilder(output + ITEMS_ENDPOINT);
+			        builder.setParameter("owningCollection", parent.getId());
+					
+					HttpPost post = new HttpPost(builder.build());
+					post.setEntity(item.toHttpEntity());
+					post.setHeader(X_XSRF_TOKEN, xsrfToken);
+					post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+	
+					try (CloseableHttpResponse response = client.execute(post)) {
+						if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}: {2}",
+									article, response.getCode(), item.toJson()));
+						} else if (response.getCode() != HttpStatus.SC_CREATED) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}.",
+									article, response.getCode()));
+						}
+						item = Item.fromHttpEntity(response.getEntity());
+						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+							xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
 					}
 				}
-				// Now that the item has been already created, rewrite it 
-				item.setDate(parent.getDate());
-				item.setUri(article.getHandleUri());
-
-				HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + item.getId());
-				put.setHeader(X_XSRF_TOKEN, xsrfToken);
-				put.setHeader(AUTHORIZATION_TOKEN, jwtToken);
-				put.setEntity(item.toHttpEntity());
-				
-				try (CloseableHttpResponse response = client.execute(put)) {
-					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
-						throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}: {2}",
-								article, response.getCode(), item.toJson()));
-					} else if (response.getCode() != HttpStatus.SC_OK) {
-						throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}.",
-								article, response.getCode()));
+				// Now that the item has been already created, rewrite it
+				{
+					item.setDate(parent.getDate());
+					item.setUri(article.getHandleUri());
+	
+					HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + item.getId());
+					put.setHeader(X_XSRF_TOKEN, xsrfToken);
+					put.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+					put.setEntity(item.toHttpEntity());
+					
+					try (CloseableHttpResponse response = client.execute(put)) {
+						if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+							throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}: {2}",
+									article, response.getCode(), item.toJson()));
+						} else if (response.getCode() != HttpStatus.SC_OK) {
+							throw new MigrationException(MessageFormat.format("Unable to create Collection from ''{0}''. HTTP request returned code {1}.",
+									article, response.getCode()));
+						}
+						item = Item.fromHttpEntity(response.getEntity());
+						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+							xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
 					}
-					item = Item.fromHttpEntity(response.getEntity());
-					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+				}
+				
+				// Now, create a bundle... 
+				if (article.getHandle() == null) {
+					logger.info("Article '" + article.getLink() + "' does not have a handle! Skipping file upload...");
+				} else {
+					File file = Item.getFile(article);
+					if (file.exists()) {
+						DSpaceEntity bundle = new DSpaceEntity();
+						bundle.setName("ORIGINAL");
+						{
+							HttpPost post = new HttpPost(output + String.format(ITEM_BUNDLES_ENDPOINT, item.getId()));
+							post.setHeader(X_XSRF_TOKEN, xsrfToken);
+							post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+							post.setEntity(new StringEntity(new Gson().toJson(bundle), ContentType.APPLICATION_JSON));
+							
+							try (CloseableHttpResponse response = client.execute(post)) {
+								if (response.getCode() != HttpStatus.SC_CREATED) {
+									throw new MigrationException(MessageFormat.format("Unable to create bundles for ''{0}''. HTTP request returned code {1}.",
+											article, response.getCode()));
+								}
+								bundle = new Gson().fromJson(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8), DSpaceEntity.class);
+								if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+									xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+								}
+							}
+						}
+						
+						// And finally, upload a file...
+						HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
+						post.setHeader(X_XSRF_TOKEN, xsrfToken);
+						post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+						
+						MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+						builder.addBinaryBody("file", file, ContentType.APPLICATION_PDF, file.getName());
+						post.setEntity(builder.build());
+						
+						try (CloseableHttpResponse response = client.execute(post)) {
+							if (response.getCode() != HttpStatus.SC_CREATED) {
+								throw new MigrationException(MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
+										article, response.getCode()));
+							}
+							EntityUtils.consume(response.getEntity());
+							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+								xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+							}
+						}
 					}
 				}
 			}

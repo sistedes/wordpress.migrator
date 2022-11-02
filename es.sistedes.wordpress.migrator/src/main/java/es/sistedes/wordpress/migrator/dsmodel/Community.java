@@ -12,7 +12,7 @@ import com.google.gson.Gson;
 import es.sistedes.wordpress.migrator.wpmodel.Conference;
 import es.sistedes.wordpress.migrator.wpmodel.Edition;
 
-public class Community extends AbstractDSpaceEntity {
+public class Community extends DSpaceEntity {
 
 	private static final String BIBTEX_TAG = "<p>Ver la referencia en formato <a href=\"#\"  class=\"citaBibtex\">Bibtex</a></p>";
 	

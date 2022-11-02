@@ -21,26 +21,36 @@ import com.google.gson.Gson;
 import es.sistedes.wordpress.migrator.wpmodel.Article;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
 
-public class Item extends AbstractDSpaceEntity {
+public class Item extends DSpaceEntity {
 
-	final static Logger logger = LoggerFactory.getLogger(Item.class);
-	private static final String PDF_CACHE_DIR = "pdfcache";
+	private transient static final Logger logger = LoggerFactory.getLogger(Item.class);
+	private transient static final String PDF_CACHE_DIR = "pdfcache";
 	
 	// BEGIN: JSON fields
 	protected boolean inArchive = true;
 	protected boolean discoverable = true;
 	// END: JSON fields
 	
+	
 	public static Item from(Collection collection, Article article) {
+		File file = getFile(article);
 		try {
-			File file = Paths.get(PDF_CACHE_DIR, article.getHandle().replaceAll("/", "-")).toFile();
-			if (!file.exists()) {
+			if (file != null && !file.exists()) {
 				FileUtils.copyInputStreamToFile((InputStream) new URL(article.getDocumentUrl()).getContent(), file);
 			}
 		} catch (Exception e) {
 			logger.error("Unable to retrieve PDF file for "  + article.getLink());
 		}
 		return new Item(article.getTitle(), article.getAbstract(),  article.getKeywords(), article.getAuthors(), article.getHandleUri(), collection.getDate());
+	}
+
+	public static File getFile(Article article) {
+		String handle = article.getHandle();
+		if (handle == null) {
+			return null;
+		} else {
+			return Paths.get(PDF_CACHE_DIR, handle.replaceAll("/", "-") + ".pdf").toFile();
+		}
 	}
 
 	public Item(String title, String description, List<String> keywords, List<Author> authors, String uri, Date date) {
