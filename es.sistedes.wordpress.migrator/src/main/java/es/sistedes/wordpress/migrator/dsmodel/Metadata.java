@@ -13,6 +13,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class Metadata {
 	
+	private volatile static DateFormat DATE_FORMAT_SIMPLE = new SimpleDateFormat("yyyy-MM-dd");
 	private volatile static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T00:00:00Z'");
 	
 	// BEGIN: JSON fields
@@ -109,7 +110,7 @@ public class Metadata {
 		this.datesIssued.clear();
 		this.datesAccessioned.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 		this.datesAvailable.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
-		this.datesIssued.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
+		this.datesIssued.add(new DublinCoreBasic(DATE_FORMAT_SIMPLE.format(date)));
 	}
 	
 	public String getAbstract() {

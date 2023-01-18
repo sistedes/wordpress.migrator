@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -55,6 +56,7 @@ public class Item extends DSpaceEntity {
 
 	public Item(String title, String description, List<String> keywords, List<Author> authors, String uri, Date date) {
 		this.name = title;
+		this.handle = StringUtils.replace(uri, "http://hdl.handle.net", "");
 		this.metadata.setTitle(title);
 		this.metadata.setDescription(description);
 		this.metadata.setUri(uri);

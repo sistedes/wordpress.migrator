@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -83,6 +84,7 @@ public class Migrator {
 	private static final String API_ENDPOINT = "/api";
 	private static final String AUTHN_LOGIN_ENDPOINT = API_ENDPOINT + "/authn/login";
 	private static final String SITES_ENDPOINT = API_ENDPOINT + "/core/sites";
+	private static final String TOP_COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities/search/top";
 	private static final String COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities";
 	private static final String COLLECTIONS_ENDPOINT = API_ENDPOINT + "/core/collections";
 	private static final String ITEMS_ENDPOINT = API_ENDPOINT + "/core/items";
@@ -90,11 +92,19 @@ public class Migrator {
 	private static final String BUNDLES_BITSTREAMS_ENDPOINT = API_ENDPOINT + "/core/bundles/%s/bitstreams";
 	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
 
-	private class Response {
+	private class SitesResponse {
 		private class Embedded {
 			private List<Site> sites;
 		}
 
+		private Embedded _embedded;
+	}
+
+	private class CommunitiesResponse {
+		private class Embedded {
+			private List<Community> communities;
+		}
+		
 		private Embedded _embedded;
 	}
 
@@ -198,18 +208,26 @@ public class Migrator {
 							logger.info("[>EDITION] Starting migration of '"  + edition.getTitle() + "'");
 							Community childCommunity = createCommunity(community, edition);
 							if (edition.getTracks().isEmpty()) {
-								logger.error("[!EDITION] '" + edition.getTitle() + "' has not tracks! Skipping...");
-								continue;
-							}
-							for (Track track : edition.getTracks()) {
-								logger.info("[>TRACK] Starting migration of " + track.getTitle() + " (" + track.getArticles().size() + " papers)");
-								Collection collection = createCollection(childCommunity, track, edition.getDate());
-								for (Article article : track.getArticles()) {
+								logger.warn("[!EDITION] '" + edition.getTitle() + "' has no tracks! Creating a dummy one...");
+								logger.info("[>TRACK] Starting migration of " + edition.getTitle() + " (" + edition.getArticles().size() + " papers)");
+								Collection collection = createCollection(childCommunity, edition, edition.getDate());
+								for (Article article : edition.getArticles()) {
 									logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
 											+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
 									createItem(collection, article);
 								}
-								logger.info("[<TRACK] Migration of '" + track.getTitle() + "' finished");
+								logger.info("[<TRACK] Migration of '" + edition.getTitle() + "' finished");
+							} else {
+								for (Track track : edition.getTracks()) {
+									logger.info("[>TRACK] Starting migration of " + track.getTitle() + " (" + track.getArticles().size() + " papers)");
+									Collection collection = createCollection(childCommunity, track, edition.getDate());
+									for (Article article : track.getArticles()) {
+										logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
+												+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
+										createItem(collection, article);
+									}
+									logger.info("[<TRACK] Migration of '" + track.getTitle() + "' finished");
+								}
 							}
 							logger.info("[<EDITION] Migration of '"  + edition.getTitle() + "' finished");
 						} else {
@@ -228,8 +246,29 @@ public class Migrator {
 	private Community createCommunity(Site site, Conference conference) throws MigrationException, IOException, ParseException {
 		
 		Community community = Community.from(site, conference);
-		
 		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				
+				HttpGet get = new HttpGet(output + TOP_COMMUNITIES_ENDPOINT);
+				get.setHeader(X_XSRF_TOKEN, xsrfToken);
+				get.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+				
+				try (CloseableHttpResponse response = client.execute(get)) {
+					if (response.getCode() != HttpStatus.SC_OK) {
+						throw new MigrationException(MessageFormat.format("Unable to obtain Communities from ''{0}''. HTTP request returned code {1}: {2}",
+								output, response.getCode(), community.toJson()));
+					}
+					String string = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					List<Community> communities = new Gson().fromJson(string, CommunitiesResponse.class)._embedded.communities;
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+					}
+					Optional<Community> result = communities.stream().filter(c -> StringUtils.equals(c.getName(), conference.getTitle())).findFirst();
+					if (result.isPresent()) {
+						return result.get();
+					}
+				}
+			}
 			try (CloseableHttpClient client = httpClientBuilder.build()) {
 
 				HttpPost post = new HttpPost(output + COMMUNITIES_ENDPOINT);
@@ -414,7 +453,7 @@ public class Migrator {
 						try (CloseableHttpResponse response = client.execute(post)) {
 							if (response.getCode() != HttpStatus.SC_CREATED) {
 								throw new MigrationException(MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
-										article, response.getCode()));
+										article.getTitle(), response.getCode()));
 							}
 							EntityUtils.consume(response.getEntity());
 							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
@@ -484,8 +523,10 @@ public class Migrator {
 	
 					try (CloseableHttpResponse response = client.execute(post)) {
 						if (response.getCode() != HttpStatus.SC_CREATED) {
-							throw new MigrationException(MessageFormat.format("Unable to create metadata element from ''{0}''. HTTP request returned code {1}.",
+							MigrationException me = new MigrationException(MessageFormat.format("Unable to create metadata element from ''{0}''. HTTP request returned code {1}.",
 									obj.toString(), response.getCode()));
+//							throw me;
+							logger.error(me.getMessage());
 						}
 						EntityUtils.consume(response.getEntity());
 						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
@@ -503,7 +544,7 @@ public class Migrator {
 				HttpGet get = new HttpGet(output + SITES_ENDPOINT);
 				try (CloseableHttpResponse response = client.execute(get)) {
 					String json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-					site = new Gson().fromJson(json, Response.class)._embedded.sites.get(0);
+					site = new Gson().fromJson(json, SitesResponse.class)._embedded.sites.get(0);
 				}
 			}
 		}
