@@ -29,9 +29,6 @@ public class Metadata {
 	@SerializedName("dc.description.abstract")
 	private List<DublinCoreBasic> abstracts = new ArrayList<>();
 
-	@SerializedName("dc.description.toc")
-	private List<DublinCoreBasic> tocs = new ArrayList<>();
-
 	@SerializedName("dc.subject")
 	private List<DublinCoreBasic> subjects = new ArrayList<>();
 	
@@ -50,9 +47,6 @@ public class Metadata {
 	@SerializedName("dc.rights.uri")
 	private List<DublinCoreBasic> rightsUris = new ArrayList<>();
 	
-	@SerializedName("dc.date.accessioned")
-	private List<DublinCoreBasic> datesAccessioned = new ArrayList<>();
-
 	@SerializedName("dc.date.available")
 	private List<DublinCoreBasic> datesAvailable = new ArrayList<>();
 
@@ -89,12 +83,6 @@ public class Metadata {
 		abstracts.add(new DublinCoreBasic(abs));
 	}
 
-	public void setToc(String toc) {
-		if (StringUtils.isBlank(toc)) return;
-		tocs.clear();
-		tocs.add(new DublinCoreBasic(toc));
-	}
-
 	public void addAuthor(String author) {
 		authors.add(new DublinCoreBasic(author, authors.size()));
 	}
@@ -121,10 +109,8 @@ public class Metadata {
 	
 	public void setDate(Date date) {
 		if (date == null) return;
-		this.datesAccessioned.clear();
 		this.datesAvailable.clear();
 		this.datesIssued.clear();
-		this.datesAccessioned.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 		this.datesAvailable.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 		this.datesIssued.add(new DublinCoreBasic(DATE_FORMAT_SIMPLE.format(date)));
 	}
@@ -143,10 +129,6 @@ public class Metadata {
 
 	public String getDescription() {
 		return descriptions.stream().findFirst().map(e ->  e.getValue()).orElse(null);
-	}
-
-	public String getToc() {
-		return tocs.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 
 	public String getRights() {
