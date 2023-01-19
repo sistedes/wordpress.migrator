@@ -44,9 +44,12 @@ public class Metadata {
 	@SerializedName("dc.contributor.institution")
 	private List<DublinCoreBasic> institutions = new ArrayList<>();
 	
-	@SerializedName("dc.rights")
-	private List<DublinCoreBasic> rights = new ArrayList<>();
+	@SerializedName("dc.rights.license")
+	private List<DublinCoreBasic> licenses = new ArrayList<>();
 
+	@SerializedName("dc.rights.uri")
+	private List<DublinCoreBasic> rightsUris = new ArrayList<>();
+	
 	@SerializedName("dc.date.accessioned")
 	private List<DublinCoreBasic> datesAccessioned = new ArrayList<>();
 
@@ -104,10 +107,16 @@ public class Metadata {
 		institutions.add(new DublinCoreBasic(institution, institutions.size()));
 	}
 	
-	public void setRights(String rights) {
-		if (StringUtils.isBlank(rights)) return;
-		this.rights.clear();
-		this.rights.add(new DublinCoreBasic(rights));
+	public void setLicense(String license) {
+		if (StringUtils.isBlank(license)) return;
+		licenses.clear();
+		licenses.add(new DublinCoreBasic(license));
+	}
+	
+	public void setRightsUri(String rightsUri) {
+		if (StringUtils.isBlank(rightsUri)) return;
+		rightsUris.clear();
+		rightsUris.add(new DublinCoreBasic(rightsUri));
 	}
 	
 	public void setDate(Date date) {
@@ -141,7 +150,7 @@ public class Metadata {
 	}
 
 	public String getRights() {
-		return rights.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return licenses.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public Date getDate() {

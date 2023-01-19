@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
 import es.sistedes.wordpress.migrator.wpmodel.Article;
+import es.sistedes.wordpress.migrator.wpmodel.Article.License;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
 
 public class Item extends DSpaceEntity {
@@ -43,7 +44,7 @@ public class Item extends DSpaceEntity {
 		} catch (Exception e) {
 			logger.error("Unable to retrieve PDF file for "  + article.getLink());
 		}
-		return new Item(article.getTitle(), article.getAbstract(),  article.getKeywords(), article.getAuthors(), article.getHandleUri(), collection.getDate());
+		return new Item(article.getTitle(), article.getAbstract(),  article.getKeywords(), article.getAuthors(), article.getHandleUri(), article.getLicense(), collection.getDate());
 	}
 
 	public static File getFile(Article article) {
@@ -55,7 +56,7 @@ public class Item extends DSpaceEntity {
 		}
 	}
 
-	public Item(String title, String description, List<String> keywords, List<Author> authors, String uri, Date date) {
+	public Item(String title, String description, List<String> keywords, List<Author> authors, String uri, String license, Date date) {
 		this.name = title;
 		this.handle = StringUtils.replace(uri, "http://hdl.handle.net", "");
 		this.metadata.setTitle(title);
@@ -80,6 +81,13 @@ public class Item extends DSpaceEntity {
 				this.metadata.addInstitution("Unknown Affiliation");
 			}
 		});
+		if (License.from(license) != License.CC_BY) {
+			logger.warn(MessageFormat.format("Unexpected license type (''{0}'') for paper at ''{1}''", license, uri));
+		}
+		// NOTE: The check above is only used to warn (and to fix) unexpected rights in the new Digital Library
+		// From now on, all work should be available under de CC BY 4.0 license
+		this.metadata.setLicense("CC BY 4.0");
+		this.metadata.setRightsUri("https://creativecommons.org/licenses/by/4.0/");
 	}
 	
 	public void setUri(String uri) {

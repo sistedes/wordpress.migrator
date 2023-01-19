@@ -23,6 +23,43 @@ import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
 public class Article {
 
+	public static enum License {
+		CC_BY("CreativeCommons Reconocimiento (by)"),
+		CC_BY_NC("CreativeCommons Reconocimiento – NoComercial (by-nc)"),
+		CC_BY_NC_SA("CreativeCommons Reconocimiento – NoComercial – CompartirIgual (by-nc-sa)"),
+		CC_BY_NC_ND("CreativeCommons Reconocimiento – NoComercial – SinObraDerivada (by-nc-nd)"),
+		CC_BY_SA("CreativeCommons Reconocimiento – CompartirIgual (by-sa)"),
+		CC_BY_ND("CreativeCommons Reconocimiento – SinObraDerivada (by-nd)"),
+		RESTRICTED("Restringida"),
+		PUBLISHED("Ya Publicado"),
+		UNKNOWN("Unknown");
+		
+		private String name;
+		
+		private License(String name){
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		public static License from(String longName) {
+			// We include here some hardcoded strings, because we 
+			// can find a lot of shit in the current Wordpress Library
+			// which supposedly means CC-BY
+			if ("CreativeCommons".equals(longName) || "CreativeCommons".equals(longName)) {
+				return License.CC_BY;
+			}
+			for (License license : License.values()) {
+	            if (license.name.equals(longName)) {
+	                return license;
+	            }
+	        }
+			return UNKNOWN;
+		}
+	}
+	
 	private static class Term {
 		private String name;
 	}
@@ -69,6 +106,10 @@ public class Article {
 		return StringUtils.trimToNull(metadata.get("abstract"));
 	}
 
+	public String getLicense() {
+		return StringUtils.trimToNull(metadata.get("autorizacion"));
+	}
+	
 	public List<String> getKeywords() {
 		//return Arrays.asList(metadata.get("keywords") != null ? metadata.get("keywords").split(",") : new String[] {});
 		List<String> result;
