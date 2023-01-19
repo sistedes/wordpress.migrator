@@ -517,7 +517,7 @@ public class Migrator {
 				objs.add(new JsonObject());
 				objs.get(1).addProperty("element", "contributor");
 				objs.get(1).addProperty("qualifier", "institution");
-				objs.get(1).addProperty("scopeNote", "Use for institutions that contributed to this element. May be used to specify affiliations.");
+				objs.get(1).addProperty("scopeNote", "Use for institutions that contributed to this item. May be used to specify affiliations.");
 
 				for (JsonObject obj : objs) {
 					post.setEntity(new StringEntity(obj.toString(), ContentType.APPLICATION_JSON));
@@ -528,7 +528,6 @@ public class Migrator {
 						if (response.getCode() != HttpStatus.SC_CREATED) {
 							MigrationException me = new MigrationException(MessageFormat.format("Unable to create metadata element from ''{0}''. HTTP request returned code {1}.",
 									obj.toString(), response.getCode()));
-//							throw me;
 							logger.error(me.getMessage());
 						}
 						EntityUtils.consume(response.getEntity());
