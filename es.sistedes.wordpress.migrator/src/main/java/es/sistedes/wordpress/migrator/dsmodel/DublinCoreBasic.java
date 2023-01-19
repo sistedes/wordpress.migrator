@@ -3,7 +3,6 @@ package es.sistedes.wordpress.migrator.dsmodel;
 public class DublinCoreBasic {
 
 	// BEGIN: JSON fields
-	@SuppressWarnings("unused")
 	private String value;
 	
     @SuppressWarnings("unused")
