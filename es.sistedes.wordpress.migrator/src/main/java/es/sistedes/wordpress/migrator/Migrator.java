@@ -206,6 +206,10 @@ public class Migrator {
 					for (Edition edition : conference.getEditions((e1, e2) -> StringUtils.compare(e1.getTitle(), e2.getTitle()))) {
 						if (edition.getYear() >= getStartYear() && edition.getYear() <= getEndYear()) {
 							logger.info("[>EDITION] Starting migration of '"  + edition.getTitle() + "'");
+							if (edition.getArticles().isEmpty()) {
+								logger.warn("[!EDITION] '" + edition.getTitle() + "' has no papers! Skipping!");
+								continue;
+							}
 							Community childCommunity = createCommunity(community, edition);
 							if (edition.getTracks().isEmpty()) {
 								logger.warn("[!EDITION] '" + edition.getTitle() + "' has no tracks! Creating a dummy one...");
