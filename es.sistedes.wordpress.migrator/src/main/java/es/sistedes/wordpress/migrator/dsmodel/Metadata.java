@@ -32,6 +32,9 @@ public class Metadata {
 	@SerializedName("dc.description.toc")
 	private List<DublinCoreBasic> tocs = new ArrayList<>();
 
+	@SerializedName("dc.subject")
+	private List<DublinCoreBasic> subjects = new ArrayList<>();
+	
 	@SerializedName("dc.contributor.author")
 	private List<DublinCoreBasic> authors = new ArrayList<>();
 	
@@ -71,6 +74,10 @@ public class Metadata {
 		if (StringUtils.isBlank(description)) return;
 		descriptions.clear();
 		descriptions.add(new DublinCoreBasic(description));
+	}
+	
+	public void addSubject(String subject) {
+		subjects.add(new DublinCoreBasic(subject, subjects.size()));
 	}
 	
 	public void setAbstract(String abs) {

@@ -258,14 +258,17 @@ public class Migrator {
 						throw new MigrationException(MessageFormat.format("Unable to obtain Communities from ''{0}''. HTTP request returned code {1}: {2}",
 								output, response.getCode(), community.toJson()));
 					}
-					String string = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-					List<Community> communities = new Gson().fromJson(string, CommunitiesResponse.class)._embedded.communities;
 					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
 						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
 					}
-					Optional<Community> result = communities.stream().filter(c -> StringUtils.equals(c.getName(), conference.getTitle())).findFirst();
-					if (result.isPresent()) {
-						return result.get();
+					String string = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					CommunitiesResponse communitiesResponse = new Gson().fromJson(string, CommunitiesResponse.class);
+					if (communitiesResponse._embedded != null) {
+						List<Community> communities = communitiesResponse._embedded.communities;
+						Optional<Community> result = communities.stream().filter(c -> StringUtils.equals(c.getName(), conference.getTitle())).findFirst();
+						if (result.isPresent()) {
+							return result.get();
+						}
 					}
 				}
 			}
