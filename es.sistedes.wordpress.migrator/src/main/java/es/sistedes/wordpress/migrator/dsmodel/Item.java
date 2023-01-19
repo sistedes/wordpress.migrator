@@ -65,14 +65,14 @@ public class Item extends DSpaceEntity {
 		this.metadata.setDate(date);
 		keywords.forEach(k -> this.metadata.addSubject(k));
 		authors.forEach(a -> this.metadata.addAuthor(a.getLastName() + ", " + a.getFirstName()));
-		authors.forEach(a -> { 
-			if (StringUtils.isNotBlank(a.getEmail())) { 
-					this.metadata.addEmail(a.getEmail());
-				} else {
-					logger.warn(MessageFormat.format("Missing e-mail for ''{0} {1}'' in paper at ''{2}''", a.getFirstName(), a.getLastName(), uri));
-					this.metadata.addEmail("unknown@invalid");
-				}
-			});
+		if (authors.stream().allMatch(a -> StringUtils.isBlank(a.getEmail()))) {
+			logger.warn(MessageFormat.format("Authors in paper at ''{0}'' have no e-mails", uri));
+		} else if (authors.stream().allMatch(a -> StringUtils.isNotBlank(a.getEmail()))) {
+			authors.forEach(a -> this.metadata.addEmail(a.getEmail()) );
+		} else {
+			logger.warn(MessageFormat.format("Only some authors in paper at ''{0}'' have e-mails, adding dummy addresses for those missing...", uri));
+			authors.forEach(a -> this.metadata.addEmail(StringUtils.defaultIfBlank(a.getEmail(), "unknown@invalid")));
+		}
 		authors.forEach(a -> { 
 			if (StringUtils.isNotBlank(a.getAffiliation())) { 
 				this.metadata.addInstitution(a.getAffiliation());
