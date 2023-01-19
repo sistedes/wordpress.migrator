@@ -1,9 +1,9 @@
 package es.sistedes.wordpress.migrator.wpmodel;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,6 +11,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.gson.Gson;
 
@@ -45,7 +48,8 @@ public class Edition extends Track {
 		if (tracks == null) {
 			try {
 				URL url = new URL(getCollectionUrl() + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, getId()));
-				this.tracks = Collections.unmodifiableList(Arrays.asList(new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(url)), Track[].class)));
+				this.tracks = Collections.unmodifiableList(Arrays.asList(new Gson().fromJson(
+						StringEscapeUtils.unescapeXml(IOUtils.toString(DelayedStreamOpener.open(url), StandardCharsets.UTF_8)), Track[].class)));
 			} catch (MalformedURLException e) {
 				// Should not happen...
 				new RuntimeException(e);
