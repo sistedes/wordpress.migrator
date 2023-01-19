@@ -3,13 +3,17 @@ package es.sistedes.wordpress.migrator.wpmodel;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -19,6 +23,12 @@ import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
 public class Article {
 
+	private static class Term {
+		private String name;
+	}
+	
+	private transient static final Logger logger = LoggerFactory.getLogger(Article.class);
+	
 	// BEGIN: JSON fields
 	private String id;
 	private String link;
@@ -60,7 +70,20 @@ public class Article {
 	}
 
 	public List<String> getKeywords() {
-		return Arrays.asList(metadata.get("keywords") != null ? metadata.get("keywords").split(",") : new String[] {});
+		//return Arrays.asList(metadata.get("keywords") != null ? metadata.get("keywords").split(",") : new String[] {});
+		List<String> result;
+		try {
+			String termsUrl = StringUtils.trimToNull(_links.get("wp:term")[0].get("href"));
+			Term[] terms = new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(new URL(termsUrl))), Term[].class);
+			result = Arrays.asList(terms).stream().map(t -> StringUtils.trim(t.name)).collect(Collectors.toUnmodifiableList());
+		} catch (Exception e) {
+			logger.error(MessageFormat.format("Unable to retrieve keywords for article ''{0}''", link));
+			result = Arrays.asList(new String[] {});
+		}
+		if (result.isEmpty()) {
+			logger.warn(MessageFormat.format("Article ''{0}'' has no keywords", link));
+		}
+		return result;
 	}
 	
 	public String getHandle() {
