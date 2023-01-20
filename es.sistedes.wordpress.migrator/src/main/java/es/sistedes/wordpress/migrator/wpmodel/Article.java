@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +118,12 @@ public class Article {
 		try {
 			String termsUrl = StringUtils.trimToNull(_links.get("wp:term")[0].get("href"));
 			Term[] terms = new Gson().fromJson(new InputStreamReader(DelayedStreamOpener.open(new URL(termsUrl))), Term[].class);
-			result = Arrays.asList(terms).stream().map(t -> StringUtils.trim(t.name)).collect(Collectors.toUnmodifiableList());
+			result = Arrays.asList(terms).stream()
+					.map(t -> StringUtils.trim(t.name))
+					.map(k -> WordUtils.capitalize(k))
+					.map(k -> RegExUtils.replacePattern(k, "^\"(.*)\"$", "$1")) // Cleanup quoted strings
+					.map(k -> RegExUtils.replacePattern(k, "^(.*)\\.$", "$1")) // Cleanup string finishing with a dot
+					.collect(Collectors.toUnmodifiableList());
 		} catch (Exception e) {
 			logger.error(MessageFormat.format("Unable to retrieve keywords for article ''{0}''", link));
 			result = Arrays.asList(new String[] {});
