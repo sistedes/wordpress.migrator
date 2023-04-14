@@ -66,6 +66,19 @@ import es.sistedes.wordpress.migrator.wpmodel.Conference;
 import es.sistedes.wordpress.migrator.wpmodel.ConferencesLibrary;
 import es.sistedes.wordpress.migrator.wpmodel.Edition;
 import es.sistedes.wordpress.migrator.wpmodel.Track;
+import net.handle.hdllib.AbstractMessage;
+import net.handle.hdllib.AbstractRequest;
+import net.handle.hdllib.AbstractResponse;
+import net.handle.hdllib.AdminRecord;
+import net.handle.hdllib.CreateHandleRequest;
+import net.handle.hdllib.Encoder;
+import net.handle.hdllib.HandleException;
+import net.handle.hdllib.HandleResolver;
+import net.handle.hdllib.HandleValue;
+import net.handle.hdllib.ModifyValueRequest;
+import net.handle.hdllib.PublicKeyAuthenticationInfo;
+import net.handle.hdllib.ResolutionRequest;
+import net.handle.hdllib.Util;
 
 /**
  * A {@link Migrator} class that extracts data from the Sistedes Digital Library
@@ -96,6 +109,12 @@ public class Migrator {
 	private static final String RESOURCE_POLICIES_SEARCH_ENDPOINT = RESOURCE_POLICIES_ENDPOINT + "/search/resource?uuid=%s";
 	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
 
+	private static final String COMMUNITIES_SUFFIX = "/communities/";
+	private static final String COLLECTIONS_SUFFIX = "/collections/";
+	private static final String ITEMS_SUFFIX = "/items/";
+	
+	
+	
 	private class Identifiable {
 		String id;
 	}
@@ -135,6 +154,8 @@ public class Migrator {
 		CONFERENCES,
 		START_YEAR,
 		END_YEAR,
+		HANDLE_PREFIX,
+		HANDLE_AUTH,
 		DRY_RUN
 		// @formatter:on
 	}
@@ -143,6 +164,7 @@ public class Migrator {
 	private URL output;
 	private String user;
 	private String password;
+	private URL frontend;
 	private Map<Options, Object> options;
 	private HttpClientBuilder httpClientBuilder;
 
@@ -151,11 +173,12 @@ public class Migrator {
 
 	private Site site;
 
-	public Migrator(URL input, URL output, String user, String password) {
+	public Migrator(URL input, URL output, String user, String password, URL frontend) {
 		this.input = input;
 		this.output = output;
 		this.user = user;
 		this.password = password;
+		this.frontend = frontend;
 		this.options = new HashMap<Options, Object>();
 		this.httpClientBuilder = HttpClients.custom().setDefaultCookieStore(new BasicCookieStore());
 
@@ -313,10 +336,15 @@ public class Migrator {
 					}
 				}
 			}
+			try {
+				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), getHandlePrefix(), getHandleAuth());
+			} catch (Exception e) {
+				throw new MigrationException(e);
+			}
 		}
 		return community;
 	}
-	
+
 	private Community createCommunity(Community parent, Edition edition) throws MigrationException, IOException, ParseException, URISyntaxException {
 		
 		Community community = Community.from(parent, edition);
@@ -345,6 +373,11 @@ public class Migrator {
 						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
 					}
 				}
+			}
+			try {
+				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), getHandlePrefix(), getHandleAuth());
+			} catch (Exception e) {
+				throw new MigrationException(e);
 			}
 		}
 		return community;
@@ -378,6 +411,11 @@ public class Migrator {
 						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
 					}
 				}
+			}
+			try {
+				setHandle(collection.getHandle(), frontend + COLLECTIONS_SUFFIX + collection.getId(), getHandlePrefix(), getHandleAuth());
+			} catch (Exception e) {
+				throw new MigrationException(e);
 			}
 		}
 		return collection;
@@ -531,6 +569,12 @@ public class Migrator {
 					}
 				}
 			}
+			try {
+				setHandle(new URL(item.getUri()).getPath().replaceFirst("/", ""), 
+						frontend + ITEMS_SUFFIX + item.getId(), getHandlePrefix(), getHandleAuth());
+			} catch (Exception e) {
+				throw new MigrationException(e);
+			}
 		}
 		return item;
 	}
@@ -630,7 +674,48 @@ public class Migrator {
 		return Arrays.asList((String[]) options.getOrDefault(Options.CONFERENCES, new String[] {}));
 	}
 
+	private PublicKeyAuthenticationInfo getHandleAuth() {
+		return (PublicKeyAuthenticationInfo) options.get(Options.HANDLE_AUTH);
+	}
+
+	private String getHandlePrefix() {
+		return (String) options.get(Options.HANDLE_PREFIX);
+	}
+	
 	private boolean isDryRun() {
 		return (boolean) options.getOrDefault(Options.DRY_RUN, false);
+	}
+	
+	private static void setHandle(String handle, String url, String prefix, PublicKeyAuthenticationInfo auth) throws HandleException, MigrationException  {
+		HandleResolver resolver = new HandleResolver();
+        
+        int timestamp = (int) (System.currentTimeMillis() / 1000);
+        
+        boolean found = false;
+        {
+        	ResolutionRequest request = new ResolutionRequest(Util.encodeString(handle), null, null, null);
+        	request.authoritative = true;
+        	AbstractResponse response = resolver.processRequest(request);
+        	found = (response.responseCode == AbstractMessage.RC_SUCCESS);
+        }
+
+        HandleValue urlVal = new HandleValue(1, Util.encodeString("URL"), Util.encodeString(url), HandleValue.TTL_TYPE_RELATIVE, 86400, timestamp, null, true, true, true, false);
+
+        AbstractRequest request = null;
+        if (found) {
+        	request = new ModifyValueRequest(Util.encodeString(handle), urlVal, auth);
+        	request.authoritative = true;
+        } else {
+        	AdminRecord adminRecord = new AdminRecord(Util.encodeString("0.NA/" + prefix), 300, true, true, true, true, true, true, true, true, true, true, true, true);
+        	HandleValue[] values = {
+        			urlVal,
+        			new HandleValue(100, Util.encodeString("HS_ADMIN"), Encoder.encodeAdminRecord(adminRecord), HandleValue.TTL_TYPE_RELATIVE, 86400, timestamp, null, true, true, true, false) 
+        	};
+            request = new CreateHandleRequest(Util.encodeString(handle), values, auth);
+        }
+        AbstractResponse response = resolver.processRequest(request);
+        if (response.responseCode != AbstractMessage.RC_SUCCESS) {
+        	throw new MigrationException("Unable to create / update URL for handle " + handle);
+        }
 	}
 }

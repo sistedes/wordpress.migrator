@@ -11,7 +11,11 @@
 
 package es.sistedes.wordpress.migrator;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.URL;
+import java.security.PrivateKey;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,6 +27,10 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringUtils;
+
+import net.handle.hdllib.PublicKeyAuthenticationInfo;
+import net.handle.hdllib.Util;
 
 /**
  * CLI invocator
@@ -44,12 +52,20 @@ public class CliLauncher {
 	private static final String END_YEAR_LONG = "end-year";
 	private static final String OUTPUT = "o";
 	private static final String OUTPUT_LONG = "output";
+	private static final String FRONTEND = "f";
+	private static final String FRONTEND_LONG = "frontend";
 	private static final String USER = "u";
 	private static final String USER_LONG = "user";
 	private static final String PASSWORD = "p";
 	private static final String PASSWORD_LONG = "password";
 	private static final String WAITING_TIME = "w";
 	private static final String WAITING_TIME_LONG = "waiting-time";
+	private static final String HANDLE_PREFIX = "h";
+	private static final String HANDLE_PREFIX_LONG = "handle-prefix";
+	private static final String HANDLE_PRIVATE_KEY_FILE = "k";
+	private static final String HANDLE_PRIVATE_KEY_FILE_LONG = "handle-key-file";
+	private static final String HANDLE_PRIVATE_KEY_PASSWORD = "x";
+	private static final String HANDLE_PRIVATE_KEY_PASSWORD_LONG = "handle-password";
 	private static final String DRY_RUN = "d";
 	private static final String DRY_RUN_LONG = "dry-run";
 
@@ -92,10 +108,11 @@ public class CliLauncher {
 
 			URL input = new URL(commandLine.getOptionValue(INPUT));
 			URL output = new URL(commandLine.getOptionValue(OUTPUT));
+			URL frontend = new URL(commandLine.getOptionValue(FRONTEND));
 			String user = commandLine.getOptionValue(USER);
 			String password = commandLine.getOptionValue(PASSWORD);
 			
-			Migrator migrator = new Migrator(input, output, user, password);
+			Migrator migrator = new Migrator(input, output, user, password, frontend);
 
 			if (commandLine.hasOption(WAITING_TIME)) {
 				DelayedStreamOpener.setDelay(Integer.parseInt(commandLine.getOptionValue(WAITING_TIME)));
@@ -113,6 +130,9 @@ public class CliLauncher {
 				migrator.putOption(Migrator.Options.CONFERENCES, commandLine.getOptionValues(CONFERENCES));
 			}
 
+			migrator.putOption(Migrator.Options.HANDLE_PREFIX, commandLine.getOptionValue(HANDLE_PREFIX));
+			migrator.putOption(Migrator.Options.HANDLE_AUTH, getAuth(commandLine.getOptionValue(HANDLE_PREFIX), commandLine.getOptionValue(HANDLE_PRIVATE_KEY_FILE), commandLine.getOptionValue(HANDLE_PRIVATE_KEY_PASSWORD)));
+			
 			if (commandLine.hasOption(DRY_RUN)) {
 				migrator.putOption(Migrator.Options.DRY_RUN, commandLine.hasOption(DRY_RUN));
 			}
@@ -123,6 +143,25 @@ public class CliLauncher {
 			printError("ERROR: " + e.getLocalizedMessage());
 			throw e;
 		}
+	}
+	
+	private static PublicKeyAuthenticationInfo getAuth(String prefix, String filename, String password) throws Exception {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+		try (FileInputStream fs = new FileInputStream(new File(filename))) {
+            byte buf[] = new byte[1024];
+            int r;
+            while ((r = fs.read(buf)) >= 0)
+                bout.write(buf, 0, r);
+        }
+        byte key[] = bout.toByteArray();
+
+        PrivateKey privkey = null;
+        if (Util.requiresSecretKey(key) && StringUtils.isBlank(password)) {
+            throw new MigrationException("Private key in " + filename + " requires a password");
+        }
+        key = Util.decrypt(key, password.getBytes());
+        privkey = Util.getPrivateKeyFromBytes(key, 0);
+        return new PublicKeyAuthenticationInfo(Util.encodeString("0.NA/" + prefix), 300, privkey);
 	}
 
 	/**
@@ -221,6 +260,41 @@ public class CliLauncher {
 				.required()
 				.build();
 		
+		Option frontendOpt = Option
+				.builder(FRONTEND)
+				.longOpt(FRONTEND_LONG)
+				.argName("frontend-url")
+				.desc("Base URL of the frontend of the DSpace Sistedes Digital Library")
+				.numberOfArgs(1)
+				.required()
+				.build();
+		
+		Option handlePrefixOpt = Option
+				.builder(HANDLE_PREFIX)
+				.longOpt(HANDLE_PREFIX_LONG)
+				.argName("prefix")
+				.desc("Prefix of the Handle registry to update")
+				.numberOfArgs(1)
+				.required()
+				.build();
+		
+		Option handlePrivateKeyFileOpt = Option
+				.builder(HANDLE_PRIVATE_KEY_FILE)
+				.longOpt(HANDLE_PRIVATE_KEY_FILE_LONG)
+				.argName("key")
+				.desc("File with the private key to athenticate in the Handle system")
+				.numberOfArgs(1)
+				.required()
+				.build();
+		
+		Option handlePrivateKeyPasswordOpt = Option
+				.builder(HANDLE_PRIVATE_KEY_PASSWORD)
+				.longOpt(HANDLE_PRIVATE_KEY_PASSWORD_LONG)
+				.argName("key")
+				.desc("Password to decypt the Handle key file")
+				.numberOfArgs(1)
+				.build();
+		
 		Option dryRunOpt = Option
 				.builder(DRY_RUN)
 				.longOpt(DRY_RUN_LONG)
@@ -235,8 +309,12 @@ public class CliLauncher {
 		options.addOption(conferencesOpt);
 		options.addOption(waitingOpt);
 		options.addOption(outputOpt);
+		options.addOption(frontendOpt);
 		options.addOption(userOpt);
 		options.addOption(passwordOpt);
+		options.addOption(handlePrefixOpt);
+		options.addOption(handlePrivateKeyFileOpt);
+		options.addOption(handlePrivateKeyPasswordOpt);
 		options.addOption(dryRunOpt);
 	}
 
@@ -248,7 +326,7 @@ public class CliLauncher {
 	 * @param <T>
 	 */
 	private static class OptionComarator<T extends Option> implements Comparator<T> {
-		private static final String OPTS_ORDER = "icseoupwd";
+		private static final String OPTS_ORDER = "icseoupfwhkxd";
 
 		@Override
 		public int compare(T o1, T o2) {
