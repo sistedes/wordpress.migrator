@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
@@ -58,6 +59,7 @@ import es.sistedes.wordpress.migrator.dsmodel.DSpaceEntity;
 import es.sistedes.wordpress.migrator.dsmodel.Item;
 import es.sistedes.wordpress.migrator.dsmodel.Site;
 import es.sistedes.wordpress.migrator.wpmodel.Article;
+import es.sistedes.wordpress.migrator.wpmodel.Article.License;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
 import es.sistedes.wordpress.migrator.wpmodel.BDSistedes;
 import es.sistedes.wordpress.migrator.wpmodel.Conference;
@@ -90,8 +92,14 @@ public class Migrator {
 	private static final String ITEMS_ENDPOINT = API_ENDPOINT + "/core/items";
 	private static final String ITEM_BUNDLES_ENDPOINT = API_ENDPOINT + "/core/items/%s/bundles";
 	private static final String BUNDLES_BITSTREAMS_ENDPOINT = API_ENDPOINT + "/core/bundles/%s/bitstreams";
+	private static final String RESOURCE_POLICIES_ENDPOINT = API_ENDPOINT + "/authz/resourcepolicies";
+	private static final String RESOURCE_POLICIES_SEARCH_ENDPOINT = RESOURCE_POLICIES_ENDPOINT + "/search/resource?uuid=%s";
 	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
 
+	private class Identifiable {
+		String id;
+	}
+	
 	private class SitesResponse {
 		private class Embedded {
 			private List<Site> sites;
@@ -108,6 +116,14 @@ public class Migrator {
 		private Embedded _embedded;
 	}
 
+	private class ResourcePoliciesResponse {
+		private class Embedded {
+			private List<Identifiable> resourcepolicies;
+		}
+		
+		private Embedded _embedded;
+	}
+	
 	/**
 	 * Options controlling the migration process
 	 * 
@@ -448,23 +464,68 @@ public class Migrator {
 							}
 						}
 						
-						// And finally, upload a file...
-						HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
-						post.setHeader(X_XSRF_TOKEN, xsrfToken);
-						post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
-						
-						MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-						builder.addBinaryBody("file", file, ContentType.APPLICATION_PDF, file.getName());
-						post.setEntity(builder.build());
-						
-						try (CloseableHttpResponse response = client.execute(post)) {
-							if (response.getCode() != HttpStatus.SC_CREATED) {
-								throw new MigrationException(MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
-										article.getTitle(), response.getCode()));
+						Identifiable uploadedFile = null;
+						// Upload a file...
+						{
+							HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
+							post.setHeader(X_XSRF_TOKEN, xsrfToken);
+							post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+							
+							MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+							builder.addBinaryBody("file", file, ContentType.APPLICATION_PDF, file.getName());
+							post.setEntity(builder.build());
+							
+							try (CloseableHttpResponse response = client.execute(post)) {
+								if (response.getCode() != HttpStatus.SC_CREATED) {
+									throw new MigrationException(MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
+											article.getTitle(), response.getCode()));
+								}
+								String json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+								uploadedFile = new Gson().fromJson(json, Identifiable.class);
+								if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+									xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+								}
 							}
-							EntityUtils.consume(response.getEntity());
-							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-								xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
+						
+						// And if the item is restricted, remove the resource policy
+						// (which at this point, should be a single one: allow anonymous read access)
+						// Upload a file...
+						if (uploadedFile != null && License.from(article.getLicense()) == License.RESTRICTED) {
+							Identifiable policy = null;
+							{
+								HttpGet get = new HttpGet(output + String.format(RESOURCE_POLICIES_SEARCH_ENDPOINT, uploadedFile.id));
+								get.setHeader(X_XSRF_TOKEN, xsrfToken);
+								get.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+								
+								try (CloseableHttpResponse response = client.execute(get)) {
+									if (response.getCode() != HttpStatus.SC_OK) {
+										throw new MigrationException(MessageFormat.format("Unable to get policies file for ''{0}''. HTTP request returned code {1}.",
+												uploadedFile.id, response.getCode()));
+									}
+									String json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+									policy = new Gson().fromJson(json, ResourcePoliciesResponse.class)._embedded.resourcepolicies.get(0);
+	
+									if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+										xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+									}
+								}
+							}
+							if (policy != null){
+								HttpDelete delete = new HttpDelete(output + RESOURCE_POLICIES_ENDPOINT + "/" + policy.id);
+								delete.setHeader(X_XSRF_TOKEN, xsrfToken);
+								delete.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+		
+								try (CloseableHttpResponse response = client.execute(delete)) {
+									if (response.getCode() != HttpStatus.SC_NO_CONTENT) {
+										throw new MigrationException(MessageFormat.format("Unable to delete policy ''{0}''. HTTP request returned code {1}.",
+												policy.id, response.getCode()));
+									}
+									EntityUtils.consume(response.getEntity());
+									if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+										xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+									}
+								}
 							}
 						}
 					}

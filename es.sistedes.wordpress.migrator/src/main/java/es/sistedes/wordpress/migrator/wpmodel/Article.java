@@ -50,7 +50,7 @@ public class Article {
 			// We include here some hardcoded strings, because we 
 			// can find a lot of shit in the current Wordpress Library
 			// which supposedly means CC-BY
-			if ("CreativeCommons".equals(longName) || "CreativeCommons".equals(longName)) {
+			if ("CreativeCommons".equals(longName) || "1".equals(longName)) {
 				return License.CC_BY;
 			}
 			for (License license : License.values()) {

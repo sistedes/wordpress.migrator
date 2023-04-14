@@ -57,6 +57,13 @@ public class Item extends DSpaceEntity {
 	}
 
 	public Item(String title, String description, List<String> keywords, List<Author> authors, String uri, String license, Date date) {
+		// Added just in case it is possible to detect relevant and already published papers...
+		// Not sure if applying it, seem to be corner cases...
+		//
+		// if (title.contains("(") || title.contains("(")) {
+		// 	logger.info(MessageFormat.format("Paper ''{0}'' has parentheses in its title. Its license is ''{1}''.", title, license));
+		// }
+		
 		this.name = title;
 		this.handle = StringUtils.replace(uri, "http://hdl.handle.net", "");
 		this.metadata.setTitle(title);
@@ -65,9 +72,13 @@ public class Item extends DSpaceEntity {
 		this.metadata.setDate(date);
 		keywords.forEach(k -> this.metadata.addSubject(k));
 		authors.forEach(a -> this.metadata.addAuthor(a.getLastName() + ", " + a.getFirstName()));
-		if (authors.stream().allMatch(a -> StringUtils.isBlank(a.getEmail()))) {
+		
+		boolean noEmails = authors.stream().allMatch(a -> StringUtils.isBlank(a.getEmail()));
+		boolean allEmails = authors.stream().allMatch(a -> StringUtils.isNotBlank(a.getEmail()));
+		
+		if (noEmails) {
 			logger.warn(MessageFormat.format("Authors in paper at ''{0}'' have no e-mails", uri));
-		} else if (authors.stream().allMatch(a -> StringUtils.isNotBlank(a.getEmail()))) {
+		} else if (allEmails) {
 			authors.forEach(a -> this.metadata.addEmail(a.getEmail()) );
 		} else {
 			logger.warn(MessageFormat.format("Only some authors in paper at ''{0}'' have e-mails, adding dummy addresses for those missing...", uri));
@@ -81,13 +92,20 @@ public class Item extends DSpaceEntity {
 				this.metadata.addInstitution("Unknown Affiliation");
 			}
 		});
-		if (License.from(license) != License.CC_BY) {
+		if (License.from(license) == License.CC_BY) {
+			this.metadata.setLicense("CC BY 4.0");
+			this.metadata.setRightsUri("https://creativecommons.org/licenses/by/4.0/");
+		} else if (License.from(license) == License.PUBLISHED) {
+			this.metadata.setLicense("CC BY-NC-ND 4.0");
+			this.metadata.setRightsUri("https://creativecommons.org/licenses/by-nc-nd/4.0/");
+			this.metadata.setIsFormatOf("Already published paper. See document contents for DOI.");
+		} else if (License.from(license) == License.RESTRICTED) {
+			this.metadata.setLicense("All rights reserved to their respective owners");
+			this.metadata.addLicense("Todos los derechos reservados a sus respectivos propietarios");
+			logger.warn(MessageFormat.format("Restricted license for paper at ''{1}''", license, uri));
+		} else {
 			logger.warn(MessageFormat.format("Unexpected license type (''{0}'') for paper at ''{1}''", license, uri));
 		}
-		// NOTE: The check above is only used to warn (and to fix) unexpected rights in the new Digital Library
-		// From now on, all work should be available under de CC BY 4.0 license
-		this.metadata.setLicense("CC BY 4.0");
-		this.metadata.setRightsUri("https://creativecommons.org/licenses/by/4.0/");
 	}
 	
 	public void setUri(String uri) {

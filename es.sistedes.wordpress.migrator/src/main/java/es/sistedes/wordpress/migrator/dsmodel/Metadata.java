@@ -49,9 +49,12 @@ public class Metadata {
 	
 	@SerializedName("dc.date.available")
 	private List<DublinCoreBasic> datesAvailable = new ArrayList<>();
-
+	
 	@SerializedName("dc.date.issued")
 	private List<DublinCoreBasic> datesIssued = new ArrayList<>();
+	
+	@SerializedName("dc.relation.isformatof")
+	private List<DublinCoreBasic> isFormatOf = new ArrayList<>();
 	// END: JSON fields
 	
 	
@@ -100,6 +103,11 @@ public class Metadata {
 		licenses.clear();
 		licenses.add(new DublinCoreBasic(license));
 	}
+
+	public void addLicense(String license) {
+		if (StringUtils.isBlank(license)) return;
+		licenses.add(new DublinCoreBasic(license));
+	}
 	
 	public void setRightsUri(String rightsUri) {
 		if (StringUtils.isBlank(rightsUri)) return;
@@ -113,6 +121,12 @@ public class Metadata {
 		this.datesIssued.clear();
 		this.datesAvailable.add(new DublinCoreBasic(DATE_FORMAT.format(date)));
 		this.datesIssued.add(new DublinCoreBasic(DATE_FORMAT_SIMPLE.format(date)));
+	}
+
+	public void setIsFormatOf(String isFormatOf) {
+		if (StringUtils.isBlank(isFormatOf)) return;
+		this.isFormatOf.clear();
+		this.isFormatOf.add(new DublinCoreBasic(isFormatOf));
 	}
 	
 	public String getAbstract() {
@@ -140,5 +154,8 @@ public class Metadata {
 			try { return DATE_FORMAT.parse(d.getValue()); } catch (ParseException e) { throw new RuntimeException(e); }
 		}).orElse(null);
 	}
-	
+
+	public String getIsFormatOf() {
+		return isFormatOf.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	}
 }
