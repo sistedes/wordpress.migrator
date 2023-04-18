@@ -1,4 +1,6 @@
 /target/
 /exceptions.txt
 /pdfcache/
+/videocache/
 /out.log
+/admpriv.bin
