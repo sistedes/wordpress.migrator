@@ -33,7 +33,7 @@ public class Collection extends DSpaceEntity {
 		this.metadata.setTitle(title);
 		this.metadata.setDescription(description);
 		this.metadata.setUri(baseUri + "/" + suffix);
-		this.metadata.setDate(date);
+		if (date != null) this.metadata.setDate(date);
 	}
 	
 	public static Collection fromHttpEntity(HttpEntity entity) throws ParseException, IOException {

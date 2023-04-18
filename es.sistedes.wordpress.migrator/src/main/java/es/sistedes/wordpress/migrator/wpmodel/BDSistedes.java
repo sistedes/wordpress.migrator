@@ -31,7 +31,7 @@ public class BDSistedes {
 				ConferencesLibrary.class);
 	}
 
-	public Library getDocumentsLibrary() {
+	public DocumentsLibrary getDocumentsLibrary() {
 		return documentsLibrary;
 	}
 

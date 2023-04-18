@@ -3,6 +3,7 @@ package es.sistedes.wordpress.migrator.dsmodel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -45,11 +46,15 @@ public class Community extends DSpaceEntity {
 		return new Community(edition.getTitle(), description, _abstract, community.getUri(), String.valueOf(edition.getYear()));
 	}
 	
+	public static Community from(Site site, String name, String description) {
+		return new Community(name, description, null, site.getBaseUri(), "SISTEDES");
+	}
+	
 	private Community(String title, String description, String _abstract, String baseUri, String suffix) {
 		this.name = title;
 		this.metadata.setTitle(title);
-		this.metadata.setDescription(description);
-		this.metadata.setAbstract(_abstract);
+		if (StringUtils.isNotBlank(description)) this.metadata.setDescription(description);
+		if (StringUtils.isNotBlank(_abstract)) this.metadata.setAbstract(_abstract);
 		this.metadata.setUri(baseUri + "/" + suffix);
 	}
 	

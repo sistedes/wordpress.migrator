@@ -7,6 +7,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -23,6 +25,7 @@ import com.google.gson.Gson;
 import es.sistedes.wordpress.migrator.wpmodel.Article;
 import es.sistedes.wordpress.migrator.wpmodel.Article.License;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
+import es.sistedes.wordpress.migrator.wpmodel.Bulletin;
 
 public class Item extends DSpaceEntity {
 
@@ -36,7 +39,7 @@ public class Item extends DSpaceEntity {
 	
 	
 	public static Item from(Collection collection, Article article) {
-		File file = getFile(article);
+		File file = getFile(article.getHandle());
 		try {
 			if (file != null && !file.exists()) {
 				FileUtils.copyInputStreamToFile((InputStream) new URL(article.getDocumentUrl()).getContent(), file);
@@ -47,8 +50,22 @@ public class Item extends DSpaceEntity {
 		return new Item(article.getTitle(), article.getAbstract(),  article.getKeywords(), article.getAuthors(), article.getHandleUri(), article.getLicense(), collection.getDate());
 	}
 
-	public static File getFile(Article article) {
-		String handle = article.getHandle();
+	public static Item from(Collection collection, Bulletin bulletin) {
+		File file = getFile(bulletin.getHandle());
+		try {
+			if (file != null && !file.exists()) {
+				FileUtils.copyInputStreamToFile((InputStream) new URL(bulletin.getDocumentUrl()).getContent(), file);
+			}
+		} catch (Exception e) {
+			logger.error("Unable to retrieve PDF file for "  + bulletin.getLink());
+		}
+		Author sistedes = new Author("Sistedes Sistedes", null, null);
+		return new Item(bulletin.getTitle(), bulletin.getDescription(), Collections.emptyList(),
+				Arrays.asList(new Author[] { sistedes }), bulletin.getHandle(), 
+				License.CC_BY_NC_ND.getName(), bulletin.getDate());
+	}
+
+	public static File getFile(String handle) {
 		if (handle == null) {
 			return null;
 		} else {
@@ -71,7 +88,10 @@ public class Item extends DSpaceEntity {
 		this.metadata.setUri(uri);
 		this.metadata.setDate(date);
 		keywords.forEach(k -> this.metadata.addSubject(k));
-		authors.forEach(a -> this.metadata.addAuthor(a.getLastName() + ", " + a.getFirstName()));
+		authors.forEach(a -> this.metadata.addAuthor(
+				// "Sistedes Sistedes" is a special reserved author name used in Bulletins
+				"Sistedes".equals(a.getFirstName()) && "Sistedes".equals(a.getLastName()) ? 
+						a.getFirstName() : a.getLastName() + ", " + a.getFirstName()));
 		
 		boolean noEmails = authors.stream().allMatch(a -> StringUtils.isBlank(a.getEmail()));
 		boolean allEmails = authors.stream().allMatch(a -> StringUtils.isNotBlank(a.getEmail()));
@@ -87,7 +107,9 @@ public class Item extends DSpaceEntity {
 		authors.forEach(a -> { 
 			if (StringUtils.isNotBlank(a.getAffiliation())) { 
 				this.metadata.addInstitution(a.getAffiliation());
-			} else {
+			} else if ("Sistedes".equals(a.getFirstName()) && "Sistedes".equals(a.getLastName())) {
+				// Do nothing
+			}else {
 				logger.warn(MessageFormat.format("Missing affiliation for ''{0} {1}'' in paper at ''{2}''", a.getFirstName(), a.getLastName(), uri));
 				this.metadata.addInstitution("Unknown Affiliation");
 			}
@@ -103,6 +125,9 @@ public class Item extends DSpaceEntity {
 			this.metadata.setLicense("All rights reserved to their respective owners");
 			this.metadata.addLicense("Todos los derechos reservados a sus respectivos propietarios");
 			logger.warn(MessageFormat.format("Restricted license for paper at ''{1}''", license, uri));
+		} else if (License.from(license) == License.CC_BY_NC_ND) {
+			this.metadata.setLicense("CC BY-NC-ND 4.0");
+			this.metadata.setRightsUri("https://creativecommons.org/licenses/by-nc-nd/4.0/");
 		} else {
 			logger.warn(MessageFormat.format("Unexpected license type (''{0}'') for paper at ''{1}''", license, uri));
 		}

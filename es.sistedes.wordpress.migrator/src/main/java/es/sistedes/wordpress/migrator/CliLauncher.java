@@ -68,6 +68,8 @@ public class CliLauncher {
 	private static final String HANDLE_PRIVATE_KEY_PASSWORD_LONG = "handle-password";
 	private static final String DRY_RUN = "d";
 	private static final String DRY_RUN_LONG = "dry-run";
+	private static final String MIGRATE_DOCS = "m";
+	private static final String MIGRATE_DOCS_LONG = "migrate-docs";
 
 	private static final Options options = new Options();
 
@@ -111,8 +113,12 @@ public class CliLauncher {
 			URL frontend = new URL(commandLine.getOptionValue(FRONTEND));
 			String user = commandLine.getOptionValue(USER);
 			String password = commandLine.getOptionValue(PASSWORD);
+			String prefix = commandLine.getOptionValue(HANDLE_PREFIX);
+			PublicKeyAuthenticationInfo auth = getAuth(commandLine.getOptionValue(HANDLE_PREFIX), 
+					commandLine.getOptionValue(HANDLE_PRIVATE_KEY_FILE), 
+					commandLine.getOptionValue(HANDLE_PRIVATE_KEY_PASSWORD));
 			
-			Migrator migrator = new Migrator(input, output, user, password, frontend);
+			Migrator migrator = new Migrator(input, output, user, password, frontend, prefix, auth);
 
 			if (commandLine.hasOption(WAITING_TIME)) {
 				DelayedStreamOpener.setDelay(Integer.parseInt(commandLine.getOptionValue(WAITING_TIME)));
@@ -130,11 +136,12 @@ public class CliLauncher {
 				migrator.putOption(Migrator.Options.CONFERENCES, commandLine.getOptionValues(CONFERENCES));
 			}
 
-			migrator.putOption(Migrator.Options.HANDLE_PREFIX, commandLine.getOptionValue(HANDLE_PREFIX));
-			migrator.putOption(Migrator.Options.HANDLE_AUTH, getAuth(commandLine.getOptionValue(HANDLE_PREFIX), commandLine.getOptionValue(HANDLE_PRIVATE_KEY_FILE), commandLine.getOptionValue(HANDLE_PRIVATE_KEY_PASSWORD)));
-			
 			if (commandLine.hasOption(DRY_RUN)) {
 				migrator.putOption(Migrator.Options.DRY_RUN, commandLine.hasOption(DRY_RUN));
+			}
+
+			if (commandLine.hasOption(MIGRATE_DOCS)) {
+				migrator.putOption(Migrator.Options.MIGRATE_DOCUMENTS, commandLine.hasOption(MIGRATE_DOCS));
 			}
 			
 			migrator.crawl();
@@ -301,6 +308,13 @@ public class CliLauncher {
 				.desc("Do not perform any changes in the target DSpace instance")
 				.numberOfArgs(0)
 				.build();
+
+		Option migrateDocsOpt = Option
+				.builder(MIGRATE_DOCS)
+				.longOpt(MIGRATE_DOCS_LONG)
+				.desc("Also migrate the Sistedes documents to the target DSpace instance")
+				.numberOfArgs(0)
+				.build();
 		// @formatter:on
 
 		options.addOption(inputOpt);
@@ -316,6 +330,7 @@ public class CliLauncher {
 		options.addOption(handlePrivateKeyFileOpt);
 		options.addOption(handlePrivateKeyPasswordOpt);
 		options.addOption(dryRunOpt);
+		options.addOption(migrateDocsOpt);
 	}
 
 	/**
@@ -326,7 +341,7 @@ public class CliLauncher {
 	 * @param <T>
 	 */
 	private static class OptionComarator<T extends Option> implements Comparator<T> {
-		private static final String OPTS_ORDER = "icseoupfwhkxd";
+		private static final String OPTS_ORDER = "icseoupfwhkxmd";
 
 		@Override
 		public int compare(T o1, T o2) {

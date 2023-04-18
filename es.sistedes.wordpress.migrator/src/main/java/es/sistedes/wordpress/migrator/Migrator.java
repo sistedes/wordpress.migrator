@@ -62,8 +62,10 @@ import es.sistedes.wordpress.migrator.wpmodel.Article;
 import es.sistedes.wordpress.migrator.wpmodel.Article.License;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
 import es.sistedes.wordpress.migrator.wpmodel.BDSistedes;
+import es.sistedes.wordpress.migrator.wpmodel.Bulletin;
 import es.sistedes.wordpress.migrator.wpmodel.Conference;
 import es.sistedes.wordpress.migrator.wpmodel.ConferencesLibrary;
+import es.sistedes.wordpress.migrator.wpmodel.DocumentsLibrary;
 import es.sistedes.wordpress.migrator.wpmodel.Edition;
 import es.sistedes.wordpress.migrator.wpmodel.Track;
 import net.handle.hdllib.AbstractMessage;
@@ -154,9 +156,8 @@ public class Migrator {
 		CONFERENCES,
 		START_YEAR,
 		END_YEAR,
-		HANDLE_PREFIX,
-		HANDLE_AUTH,
-		DRY_RUN
+		DRY_RUN,
+		MIGRATE_DOCUMENTS,
 		// @formatter:on
 	}
 
@@ -165,6 +166,8 @@ public class Migrator {
 	private String user;
 	private String password;
 	private URL frontend;
+	private String prefix;
+	private PublicKeyAuthenticationInfo auth;
 	private Map<Options, Object> options;
 	private HttpClientBuilder httpClientBuilder;
 
@@ -173,12 +176,14 @@ public class Migrator {
 
 	private Site site;
 
-	public Migrator(URL input, URL output, String user, String password, URL frontend) {
+	public Migrator(URL input, URL output, String user, String password, URL frontend, String prefix, PublicKeyAuthenticationInfo auth) {
 		this.input = input;
 		this.output = output;
 		this.user = user;
 		this.password = password;
 		this.frontend = frontend;
+		this.prefix = prefix;
+		this.auth = auth;
 		this.options = new HashMap<Options, Object>();
 		this.httpClientBuilder = HttpClients.custom().setDefaultCookieStore(new BasicCookieStore());
 
@@ -235,57 +240,82 @@ public class Migrator {
 			
 			BDSistedes bdSistedes = new BDSistedes(input);
 			ConferencesLibrary conferencesLibrary = bdSistedes.getConferencesLibrary();
-
-			// NOTE: We use for loops instead of streams since the getters may throw
-			// exceptions
-			for (Conference conference : conferencesLibrary.getConferences((c1, c2) -> StringUtils.compare(c1.getTitle(), c2.getTitle()))) {
-				if (getConferences().isEmpty() || getConferences().contains(conference.getAcronym())) {
-					logger.info("[>CONFERENCE] Starting migration of '" + conference.getTitle() + "'");
-					Community community = createCommunity(getSite(), conference);
-					for (Edition edition : conference.getEditions((e1, e2) -> StringUtils.compare(e1.getTitle(), e2.getTitle()))) {
-						if (edition.getYear() >= getStartYear() && edition.getYear() <= getEndYear()) {
-							logger.info("[>EDITION] Starting migration of '"  + edition.getTitle() + "'");
-							if (edition.getArticles().isEmpty()) {
-								logger.warn("[!EDITION] '" + edition.getTitle() + "' has no papers! Skipping!");
-								continue;
-							}
-							Community childCommunity = createCommunity(community, edition);
-							if (edition.getTracks().isEmpty()) {
-								logger.warn("[!EDITION] '" + edition.getTitle() + "' has no tracks! Creating a dummy one...");
-								logger.info("[>TRACK] Starting migration of " + edition.getTitle() + " (" + edition.getArticles().size() + " papers)");
-								Collection collection = createCollection(childCommunity, edition, edition.getDate());
-								for (Article article : edition.getArticles()) {
-									logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
-											+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
-									createItem(collection, article);
-								}
-								logger.info("[<TRACK] Migration of '" + edition.getTitle() + "' finished");
-							} else {
-								for (Track track : edition.getTracks()) {
-									logger.info("[>TRACK] Starting migration of " + track.getTitle() + " (" + track.getArticles().size() + " papers)");
-									Collection collection = createCollection(childCommunity, track, edition.getDate());
-									for (Article article : track.getArticles()) {
-										logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
-												+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
-										createItem(collection, article);
-									}
-									logger.info("[<TRACK] Migration of '" + track.getTitle() + "' finished");
-								}
-							}
-							logger.info("[<EDITION] Migration of '"  + edition.getTitle() + "' finished");
-						} else {
-							logger.info("[!EDITION] Skipping '"  + edition.getTitle() + "'...");
-						}
-					}
-					logger.info("[<CONFERENCE] Migration of '" + conference.getTitle() + "' finished");
-				}
-			}
+			DocumentsLibrary documentsLibrary = bdSistedes.getDocumentsLibrary();
+			documentsLibrary.getSeminars();
+			documentsLibrary.getBulletins();
+			
+//			migrateConferences(conferencesLibrary);
+			migrateBulletins(documentsLibrary);
+			
 			return bdSistedes;
 		} catch (Exception e) {
 			throw new MigrationException(e);
 		}
 	}
 
+	private void migrateConferences(ConferencesLibrary conferencesLibrary) throws IOException, MigrationException, ParseException, URISyntaxException {
+		// NOTE: We use for loops instead of streams since the getters may throw
+		// exceptions
+		for (Conference conference : conferencesLibrary.getConferences((c1, c2) -> StringUtils.compare(c1.getTitle(), c2.getTitle()))) {
+			if (getConferences().isEmpty() || getConferences().contains(conference.getAcronym())) {
+				logger.info("[>CONFERENCE] Starting migration of '" + conference.getTitle() + "'");
+				Community community = createCommunity(getSite(), conference);
+				for (Edition edition : conference.getEditions((e1, e2) -> StringUtils.compare(e1.getTitle(), e2.getTitle()))) {
+					if (edition.getYear() >= getStartYear() && edition.getYear() <= getEndYear()) {
+						logger.info("[>EDITION] Starting migration of '"  + edition.getTitle() + "'");
+						if (edition.getArticles().isEmpty()) {
+							logger.warn("[!EDITION] '" + edition.getTitle() + "' has no papers! Skipping!");
+							continue;
+						}
+						Community childCommunity = createCommunity(community, edition);
+						if (edition.getTracks().isEmpty()) {
+							logger.warn("[!EDITION] '" + edition.getTitle() + "' has no tracks! Creating a dummy one...");
+							logger.info("[>TRACK] Starting migration of " + edition.getTitle() + " (" + edition.getArticles().size() + " papers)");
+							Collection collection = createCollection(childCommunity, edition, edition.getDate());
+							for (Article article : edition.getArticles()) {
+								logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
+										+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
+								createItem(collection, article);
+							}
+							logger.info("[<TRACK] Migration of '" + edition.getTitle() + "' finished");
+						} else {
+							for (Track track : edition.getTracks()) {
+								logger.info("[>TRACK] Starting migration of " + track.getTitle() + " (" + track.getArticles().size() + " papers)");
+								Collection collection = createCollection(childCommunity, track, edition.getDate());
+								for (Article article : track.getArticles()) {
+									logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
+											+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
+									createItem(collection, article);
+								}
+								logger.info("[<TRACK] Migration of '" + track.getTitle() + "' finished");
+							}
+						}
+						logger.info("[<EDITION] Migration of '"  + edition.getTitle() + "' finished");
+					} else {
+						logger.info("[!EDITION] Skipping '"  + edition.getTitle() + "'...");
+					}
+				}
+				logger.info("[<CONFERENCE] Migration of '" + conference.getTitle() + "' finished");
+			}
+		}
+	}
+
+	private void migrateBulletins(DocumentsLibrary documentsLibrary) throws IOException, MigrationException, ParseException, URISyntaxException {
+		// NOTE: We use for loops instead of streams since the getters may throw
+		// exceptions
+		if (documentsLibrary.getBulletins().isEmpty()) {
+			return;
+		}
+		Community sistedesCommunity = createSistedesCommunity();
+		logger.info("[>Bulletin] Starting migration of Sistedes Bulletins");
+		Collection bulletinsCollection = createBulletinsCollection(sistedesCommunity);
+		for (Bulletin bulletin: documentsLibrary.getBulletins((b1, b2) -> b1.getDate().compareTo(b2.getDate()))) {
+			logger.debug("[-BULLETIN] Migrating '" + bulletin.getTitle() + "'.");
+			createItem(bulletinsCollection, bulletin);
+		}
+		logger.info("[<Bulletin] Migration of Sistedes Bulletins finished");
+	}
+	
 	private Community createCommunity(Site site, Conference conference) throws MigrationException, IOException, ParseException {
 		
 		Community community = Community.from(site, conference);
@@ -337,7 +367,70 @@ public class Migrator {
 				}
 			}
 			try {
-				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), getHandlePrefix(), getHandleAuth());
+				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), prefix, auth);
+			} catch (Exception e) {
+				throw new MigrationException(e);
+			}
+		}
+		return community;
+	}
+	
+	private Community createSistedesCommunity() throws MigrationException, IOException, ParseException {
+		String name = "Sistedes";
+		String description = "Sistedes pone a disposición de sus miembros y simpatizantes su "
+				+ "archivo documental, en el que se incluyen todo tipo de publicaciones (boletines de prensa, seminarios, "
+				+ "documentos, informes, etc.) que puedan ser de interés para las comunidades de Ingeniería del Software, "
+				+ "Bases de Datos y  Tecnologías de Desarrollo de Software.";
+		Community community = Community.from(getSite(), name, description);
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				
+				HttpGet get = new HttpGet(output + TOP_COMMUNITIES_ENDPOINT);
+				get.setHeader(X_XSRF_TOKEN, xsrfToken);
+				get.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+				
+				try (CloseableHttpResponse response = client.execute(get)) {
+					if (response.getCode() != HttpStatus.SC_OK) {
+						throw new MigrationException(MessageFormat.format("Unable to obtain Communities from ''{0}''. HTTP request returned code {1}: {2}",
+								output, response.getCode(), community.toJson()));
+					}
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+					}
+					String string = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					CommunitiesResponse communitiesResponse = new Gson().fromJson(string, CommunitiesResponse.class);
+					if (communitiesResponse._embedded != null) {
+						List<Community> communities = communitiesResponse._embedded.communities;
+						Optional<Community> result = communities.stream().filter(c -> StringUtils.equals(c.getName(), name)).findFirst();
+						if (result.isPresent()) {
+							return result.get();
+						}
+					}
+				}
+			}
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+
+				HttpPost post = new HttpPost(output + COMMUNITIES_ENDPOINT);
+				post.setEntity(community.toHttpEntity());
+				post.setHeader(X_XSRF_TOKEN, xsrfToken);
+				post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+
+				try (CloseableHttpResponse response = client.execute(post)) {
+					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+						throw new MigrationException(MessageFormat.format("Unable to create Community for ''{0}''. HTTP request returned code {1}: {2}",
+								name, response.getCode(), community.toJson()));
+					} else if (response.getCode() != HttpStatus.SC_CREATED) {
+						throw new MigrationException(MessageFormat.format("Unable to create Community for ''{0}''. HTTP request returned code {1}.",
+								name, response.getCode()));
+					}
+					community = Community.fromHttpEntity(response.getEntity());
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+					}
+				}
+			}
+			try {
+				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), prefix, auth);
 			} catch (Exception e) {
 				throw new MigrationException(e);
 			}
@@ -375,7 +468,7 @@ public class Migrator {
 				}
 			}
 			try {
-				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), getHandlePrefix(), getHandleAuth());
+				setHandle(community.getHandle(), frontend + COMMUNITIES_SUFFIX + community.getId(), prefix, auth);
 			} catch (Exception e) {
 				throw new MigrationException(e);
 			}
@@ -413,7 +506,55 @@ public class Migrator {
 				}
 			}
 			try {
-				setHandle(collection.getHandle(), frontend + COLLECTIONS_SUFFIX + collection.getId(), getHandlePrefix(), getHandleAuth());
+				setHandle(collection.getHandle(), frontend + COLLECTIONS_SUFFIX + collection.getId(), prefix, auth);
+			} catch (Exception e) {
+				throw new MigrationException(e);
+			}
+		}
+		return collection;
+	}
+	
+	private Collection createBulletinsCollection(Community parent) throws MigrationException, IOException, ParseException, URISyntaxException {
+		
+		String name = "Boletines de prensa";
+		String description = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral"
+				+ " que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que"
+				+ " pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
+				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interés que vayan a suceder "
+				+ "próximamente (congresos organizados por los socios, cursos, seminarios, tesis leídas, premios, etc.). "
+				+ "Los Corresponsales de Sistedes colaboran con la directiva de la asociación proporcionando el "
+				+ "contenido de los boletines. Si usted desea contribuir a los mismos, puede contactar con los "
+				+ "editores enviando un mensaje de correo electrónico a la dirección "
+				+ "<a href=\"mailto:noticias@sistedes.es\">noticias@sistedes.es</a>.";
+		Collection collection = new Collection(name, description, parent.getUri(), "BOLETINES", null);
+		
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				
+				URIBuilder builder = new URIBuilder(output + COLLECTIONS_ENDPOINT);
+		        builder.setParameter("parent", parent.getId());
+				
+				HttpPost post = new HttpPost(builder.build());
+				post.setEntity(collection.toHttpEntity());
+				post.setHeader(X_XSRF_TOKEN, xsrfToken);
+				post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+
+				try (CloseableHttpResponse response = client.execute(post)) {
+					if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+						throw new MigrationException(MessageFormat.format("Unable to create Collection for ''{0}''. HTTP request returned code {1}: {2}",
+								name, response.getCode(), collection.toJson()));
+					} else if (response.getCode() != HttpStatus.SC_CREATED) {
+						throw new MigrationException(MessageFormat.format("Unable to create Collection for ''{0}''. HTTP request returned code {1}.",
+								name, response.getCode()));
+					}
+					collection = Collection.fromHttpEntity(response.getEntity());
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+					}
+				}
+			}
+			try {
+				setHandle(collection.getHandle(), frontend + COLLECTIONS_SUFFIX + collection.getId(), prefix, auth);
 			} catch (Exception e) {
 				throw new MigrationException(e);
 			}
@@ -480,7 +621,7 @@ public class Migrator {
 				if (article.getHandle() == null) {
 					logger.info("Article '" + article.getLink() + "' does not have a handle! Skipping file upload...");
 				} else {
-					File file = Item.getFile(article);
+					File file = Item.getFile(article.getHandle());
 					if (file.exists()) {
 						DSpaceEntity bundle = new DSpaceEntity();
 						bundle.setName("ORIGINAL");
@@ -571,7 +712,122 @@ public class Migrator {
 			}
 			try {
 				setHandle(new URL(item.getUri()).getPath().replaceFirst("/", ""), 
-						frontend + ITEMS_SUFFIX + item.getId(), getHandlePrefix(), getHandleAuth());
+						frontend + ITEMS_SUFFIX + item.getId(), prefix, auth);
+			} catch (Exception e) {
+				throw new MigrationException(e);
+			}
+		}
+		return item;
+	}
+	
+	private Item createItem(Collection parent, Bulletin bulletin) throws MigrationException, IOException, ParseException, URISyntaxException {
+		
+		Item item = Item.from(parent, bulletin);
+		
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				
+				{
+					URIBuilder builder = new URIBuilder(output + ITEMS_ENDPOINT);
+			        builder.setParameter("owningCollection", parent.getId());
+					
+					HttpPost post = new HttpPost(builder.build());
+					post.setEntity(item.toHttpEntity());
+					post.setHeader(X_XSRF_TOKEN, xsrfToken);
+					post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+	
+					try (CloseableHttpResponse response = client.execute(post)) {
+						if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}: {2}",
+									bulletin, response.getCode(), item.toJson()));
+						} else if (response.getCode() != HttpStatus.SC_CREATED) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}.",
+									bulletin, response.getCode()));
+						}
+						item = Item.fromHttpEntity(response.getEntity());
+						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+							xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
+					}
+				}
+				// Now that the item has been already created, rewrite it
+				{
+					item.setDate(parent.getDate());
+					item.setUri(bulletin.getHandleUri());
+	
+					HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + item.getId());
+					put.setHeader(X_XSRF_TOKEN, xsrfToken);
+					put.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+					put.setEntity(item.toHttpEntity());
+					
+					try (CloseableHttpResponse response = client.execute(put)) {
+						if (response.getCode() == HttpStatus.SC_UNPROCESSABLE_ENTITY) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}: {2}",
+									bulletin, response.getCode(), item.toJson()));
+						} else if (response.getCode() != HttpStatus.SC_OK) {
+							throw new MigrationException(MessageFormat.format("Unable to create Item from ''{0}''. HTTP request returned code {1}.",
+									bulletin, response.getCode()));
+						}
+						item = Item.fromHttpEntity(response.getEntity());
+						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+							xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+						}
+					}
+				}
+				
+				// Now, create a bundle... 
+				if (bulletin.getHandle() == null) {
+					logger.info("Bulletin '" + bulletin.getLink() + "' does not have a handle! Skipping file upload...");
+				} else {
+					File file = Item.getFile(bulletin.getHandle());
+					if (file.exists()) {
+						DSpaceEntity bundle = new DSpaceEntity();
+						bundle.setName("ORIGINAL");
+						{
+							HttpPost post = new HttpPost(output + String.format(ITEM_BUNDLES_ENDPOINT, item.getId()));
+							post.setHeader(X_XSRF_TOKEN, xsrfToken);
+							post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+							post.setEntity(new StringEntity(new Gson().toJson(bundle), ContentType.APPLICATION_JSON));
+							
+							try (CloseableHttpResponse response = client.execute(post)) {
+								if (response.getCode() != HttpStatus.SC_CREATED) {
+									throw new MigrationException(MessageFormat.format("Unable to create bundles for ''{0}''. HTTP request returned code {1}.",
+											bulletin, response.getCode()));
+								}
+								bundle = new Gson().fromJson(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8), DSpaceEntity.class);
+								if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+									xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+								}
+							}
+						}
+						
+						// Upload a file...
+						{
+							HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
+							post.setHeader(X_XSRF_TOKEN, xsrfToken);
+							post.setHeader(AUTHORIZATION_TOKEN, jwtToken);
+							
+							MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+							builder.addBinaryBody("file", file, ContentType.APPLICATION_PDF, file.getName());
+							post.setEntity(builder.build());
+							
+							try (CloseableHttpResponse response = client.execute(post)) {
+								if (response.getCode() != HttpStatus.SC_CREATED) {
+									throw new MigrationException(MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
+											bulletin.getTitle(), response.getCode()));
+								}
+								EntityUtils.consume(response.getEntity());
+								if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+									xsrfToken = response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue();
+								}
+							}
+						}
+					}
+				}
+			}
+			try {
+				setHandle(new URL(item.getUri()).getPath().replaceFirst("/", ""), 
+						frontend + ITEMS_SUFFIX + item.getId(), prefix, auth);
 			} catch (Exception e) {
 				throw new MigrationException(e);
 			}
@@ -674,16 +930,12 @@ public class Migrator {
 		return Arrays.asList((String[]) options.getOrDefault(Options.CONFERENCES, new String[] {}));
 	}
 
-	private PublicKeyAuthenticationInfo getHandleAuth() {
-		return (PublicKeyAuthenticationInfo) options.get(Options.HANDLE_AUTH);
-	}
-
-	private String getHandlePrefix() {
-		return (String) options.get(Options.HANDLE_PREFIX);
-	}
-	
 	private boolean isDryRun() {
 		return (boolean) options.getOrDefault(Options.DRY_RUN, false);
+	}
+
+	private boolean isMigrateDocumentsEnabled() {
+		return (boolean) options.getOrDefault(Options.MIGRATE_DOCUMENTS, false);
 	}
 	
 	private static void setHandle(String handle, String url, String prefix, PublicKeyAuthenticationInfo auth) throws HandleException, MigrationException  {
