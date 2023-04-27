@@ -13,7 +13,8 @@ The tool logs **A LOT** of information, so that errors in the source legacy digi
 ```
 usage: java -jar <this-file.jar> -i <input-url> [-c <conference>] [-s
        <start-year>] [-e <end-year>] -o <output-url> -u <user> -p
-       <password> [-w <delay>] [-d]
+       <password> -f <frontend-url> [-w <delay>] -h <prefix> -k <key> [-x
+       <key>] [-m] [-t] [-d]
  -i,--input <input-url>          Base URL of the Wordpress Sistedes
                                  Digital Library to read
  -c,--conferences <conference>   Limit the migration to the specified
@@ -31,10 +32,20 @@ usage: java -jar <this-file.jar> -i <input-url> [-c <conference>] [-s
  -u,--user <user>                User of the DSpace Sistedes Digital
                                  Library with write privileges
  -p,--password <password>        Password of the user
+ -f,--frontend <frontend-url>    Base URL of the frontend of the DSpace
+                                 Sistedes Digital Library
  -w,--waiting-time <delay>       Time to wait (in ms) between connections
                                  to the Sistedes Digital Library to avoid
                                  flooding it (optional, no delay if not
                                  set)
+ -h,--handle-prefix <prefix>     Prefix of the Handle registry to update
+ -k,--handle-key-file <key>      File with the private key to athenticate
+                                 in the Handle system
+ -x,--handle-password <key>      Password to decypt the Handle key file
+ -m,--migrate-docs               Also migrate the Sistedes documents to
+                                 the target DSpace instance
+ -t,--interactive                Ask interactively when there is
+                                 uncertainty when matching authors
  -d,--dry-run                    Do not perform any changes in the target
                                  DSpace instance
 ```
