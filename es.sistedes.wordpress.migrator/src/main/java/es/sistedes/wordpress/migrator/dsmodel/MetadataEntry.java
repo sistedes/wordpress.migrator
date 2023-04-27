@@ -1,6 +1,6 @@
 package es.sistedes.wordpress.migrator.dsmodel;
 
-public class DublinCoreBasic {
+public class MetadataEntry {
 
 	// BEGIN: JSON fields
 	private String value;
@@ -18,12 +18,12 @@ public class DublinCoreBasic {
     private Integer place;
     // END: JSON fields
     
-    public DublinCoreBasic(String value) {
+    public MetadataEntry(String value) {
     	this.value = value;
     	this.confidence = -1;
     }
     
-    public DublinCoreBasic(String value, Integer place) {
+    public MetadataEntry(String value, Integer place) {
     	this.value = value;
     	this.confidence = -1;
     	this.place = place;

@@ -19,11 +19,20 @@ import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 public class Track extends Library {
 	
 	// BEGIN: JSON fields
-	private Map<String, String> articulos;
+	protected Map<String, String> articulos;
 	// END: JSON fields
-
+	
+	private transient Edition edition;
 	private transient List<Article> articles;
 
+	public Edition getEdition() {
+		return edition;
+	}
+	
+	public void setEdition(Edition edition) {
+		this.edition = edition;
+	}
+	
 	public List<Article> getArticles() throws IOException {
 		if (articles == null) {
 			this.articles = new ArrayList<>();
@@ -33,6 +42,7 @@ public class Track extends Library {
 					this.articles.add(new Gson().fromJson(
 							StringEscapeUtils.unescapeXml(
 									IOUtils.toString(DelayedStreamOpener.open(url), StandardCharsets.UTF_8)), Article.class));
+					this.articles.forEach(a -> a.setTrack(this));
 				}
 			} catch (MalformedURLException e) {
 				// Should not happen...

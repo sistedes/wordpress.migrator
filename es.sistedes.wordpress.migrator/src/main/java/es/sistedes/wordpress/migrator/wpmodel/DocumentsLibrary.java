@@ -20,6 +20,17 @@ public class DocumentsLibrary extends Library {
 	private transient List<Seminar> seminars;
 	private transient List<Bulletin> bulletins;
 
+	public String getLibraryName() {
+		return "Sistedes";
+	}
+	
+	public String getDescription() {
+		return "Sistedes pone a disposición de sus miembros y simpatizantes su "
+				+ "archivo documental, en el que se incluyen todo tipo de publicaciones (boletines de prensa, seminarios, "
+				+ "documentos, informes, etc.) que puedan ser de interés para las comunidades de Ingeniería del Software, "
+				+ "Bases de Datos y  Tecnologías de Desarrollo de Software.";
+	}
+	
 	public List<Seminar> getSeminars() throws IOException {
 		// For the seminars, no endpoint is provided in the API, so we scrap the 
 		// raw HTML instead as a quick and dirty solution...

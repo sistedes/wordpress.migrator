@@ -54,7 +54,7 @@ public class Seminar {
 			Matcher matcher = Pattern.compile(pattern, Pattern.MULTILINE | Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(page);
 			if (matcher.find()) {
 				this.author = matcher.group(1).trim();
-				this.bio = matcher.group(2).trim();
+				this.bio = matcher.group(2).trim().replaceAll("\r\n", "").replaceAll("\\s*</p>\\s*", "</p>").replaceAll("\\s*(<br/?>)+\\s*", "</p>\n<p>");
 				this.date = matcher.group(3).trim();
 			} else {
 				logger.error("Unable to parse author and date information from " + url);

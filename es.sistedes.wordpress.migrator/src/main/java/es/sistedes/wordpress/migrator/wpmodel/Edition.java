@@ -22,13 +22,22 @@ import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 public class Edition extends Track {
 	
 	// BEGIN: JSON fields
-	private Date date; 
+	protected Date date; 
 	// END: JSON fields
 	
+	private transient Conference conference;
 	private transient List<Track> tracks;
 	
 	public Date getDate() {
 		return date;
+	}
+	
+	public void setConference(Conference conference) {
+		this.conference = conference;
+	}
+	
+	public Conference getConference() {
+		return conference;
 	}
 	
 	public int getYear() {
@@ -44,12 +53,23 @@ public class Edition extends Track {
 		}
 	}
 	
+	public String getName() {
+		String text = excerpt.get("rendered");
+		Matcher matcher = Pattern.compile("Actas de las (.*? \\(.*?\\))").matcher(text);
+		if (matcher.find()) {
+			return matcher.group(1);
+		} else {
+			throw new RuntimeException("Unable to get edition name for " + getTitle());
+		}
+	}
+	
 	public List<Track> getTracks() throws IOException {
 		if (tracks == null) {
 			try {
 				URL url = new URL(getCollectionUrl() + String.format(WorpressEndpoints.LIBRARY_PARENT_QUERY, getId()));
 				this.tracks = Collections.unmodifiableList(Arrays.asList(new Gson().fromJson(
 						StringEscapeUtils.unescapeXml(IOUtils.toString(DelayedStreamOpener.open(url), StandardCharsets.UTF_8)), Track[].class)));
+				this.tracks.forEach(t -> t.setEdition(this));
 			} catch (MalformedURLException e) {
 				// Should not happen...
 				new RuntimeException(e);
@@ -65,5 +85,35 @@ public class Edition extends Track {
 			articles.addAll(track.getArticles());
 		}
 		return Collections.unmodifiableList(articles);
+	}
+
+	public String getLocation() {
+		String text = excerpt.get("rendered");
+		Matcher matcher = Pattern.compile("\\(" + conference.getAcronym() + "\\s*\\d+\\)\\.(.*?),").matcher(text);
+		if (matcher.find()) {
+			return matcher.group(1).trim();
+		} else {
+			throw new RuntimeException("Unable to get edition location for " + getTitle());
+		}
+	}
+
+	public String getProceedingsName() {
+		String text = excerpt.get("rendered");
+		Matcher matcher = Pattern.compile("(Actas de las .*? \\(.*?\\))").matcher(text);
+		if (matcher.find()) {
+			return matcher.group(1).trim();
+		} else {
+			throw new RuntimeException("Unable to get edition proceedings for " + getTitle());
+		}
+	}
+
+	public String getEditors() {
+		String text = excerpt.get("rendered");
+		Matcher matcher = Pattern.compile("<p>(.*?)\\w*\\([Ee]ds?\\.\\)").matcher(text);
+		if (matcher.find()) {
+			return matcher.group(1).trim();
+		} else {
+			throw new RuntimeException("Unable to get edition proceedings for " + getTitle());
+		}
 	}
 }

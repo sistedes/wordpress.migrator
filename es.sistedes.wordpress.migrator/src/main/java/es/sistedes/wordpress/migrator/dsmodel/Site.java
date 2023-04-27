@@ -2,12 +2,12 @@ package es.sistedes.wordpress.migrator.dsmodel;
 
 public class Site extends DSpaceEntity {
 
-	public String getHandlePrefix() {
-		return handle.split("/")[0];
+	private String getHandlePrefix() {
+		return getHandle().split("/")[0];
 	}
 
 	public String getUri() {
-		return "https://hdl.handle.net/" + handle;
+		return "https://hdl.handle.net/" + getHandle();
 	}
 	
 	public String getBaseUri() {

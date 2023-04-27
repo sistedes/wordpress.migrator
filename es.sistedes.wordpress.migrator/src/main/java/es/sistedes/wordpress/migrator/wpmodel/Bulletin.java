@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
-public class Bulletin {
+public class Bulletin extends Document {
 	
 	final static Logger logger = LoggerFactory.getLogger(Bulletin.class);
 	
@@ -79,6 +79,10 @@ public class Bulletin {
 	public String getDescription() {
 		DateFormat fmt = new SimpleDateFormat("MMMM 'de' yyyy", Locale.forLanguageTag("es"));
 		return "Boletín de Sistedes. " + StringUtils.capitalize(fmt.format(getDate())) + ".";
+	}
+	
+	public String getAbstract() {
+		return "";
 	}
 	
 	public Date getDate() {

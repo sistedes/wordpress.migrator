@@ -5,10 +5,11 @@ import java.util.Map;
 public class Library {
 
 	// BEGIN: JSON fields
-	private String id;
-	private Map<String, String> title; 
-	private Map<String, String> content; 
-	private Map<String, Map<String, String>[]> _links;
+	protected String id;
+	protected Map<String, String> title; 
+	protected Map<String, String> content; 
+	protected Map<String, Map<String, String>[]> _links;
+	protected Map<String, String> excerpt;
 	// END: JSON fields
 
 	public String getId() {
@@ -26,6 +27,5 @@ public class Library {
 	public String getCollectionUrl() {
 		return _links.get("collection")[0].get("href");
 	}
-
 
 }

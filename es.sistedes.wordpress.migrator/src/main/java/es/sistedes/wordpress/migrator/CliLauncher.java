@@ -68,6 +68,8 @@ public class CliLauncher {
 	private static final String HANDLE_PRIVATE_KEY_PASSWORD_LONG = "handle-password";
 	private static final String DRY_RUN = "d";
 	private static final String DRY_RUN_LONG = "dry-run";
+	private static final String INTERACTIVE = "t";
+	private static final String INTERACTIVE_LONG = "interactive";
 	private static final String MIGRATE_DOCS = "m";
 	private static final String MIGRATE_DOCS_LONG = "migrate-docs";
 
@@ -139,12 +141,16 @@ public class CliLauncher {
 			if (commandLine.hasOption(DRY_RUN)) {
 				migrator.putOption(Migrator.Options.DRY_RUN, commandLine.hasOption(DRY_RUN));
 			}
+			
+			if (commandLine.hasOption(INTERACTIVE)) {
+				migrator.putOption(Migrator.Options.INTERACTIVE, commandLine.hasOption(INTERACTIVE));
+			}
 
 			if (commandLine.hasOption(MIGRATE_DOCS)) {
 				migrator.putOption(Migrator.Options.MIGRATE_DOCUMENTS, commandLine.hasOption(MIGRATE_DOCS));
 			}
 			
-			migrator.crawl();
+			migrator.migrate();
 			
 		} catch (MigrationException e) {
 			printError("ERROR: " + e.getLocalizedMessage());
@@ -309,6 +315,13 @@ public class CliLauncher {
 				.numberOfArgs(0)
 				.build();
 
+		Option interactiveOpt = Option
+				.builder(INTERACTIVE)
+				.longOpt(INTERACTIVE_LONG)
+				.desc("Ask interactively when there is uncertainty when matching authors")
+				.numberOfArgs(0)
+				.build();
+		
 		Option migrateDocsOpt = Option
 				.builder(MIGRATE_DOCS)
 				.longOpt(MIGRATE_DOCS_LONG)
@@ -330,6 +343,7 @@ public class CliLauncher {
 		options.addOption(handlePrivateKeyFileOpt);
 		options.addOption(handlePrivateKeyPasswordOpt);
 		options.addOption(dryRunOpt);
+		options.addOption(interactiveOpt);
 		options.addOption(migrateDocsOpt);
 	}
 
@@ -341,7 +355,7 @@ public class CliLauncher {
 	 * @param <T>
 	 */
 	private static class OptionComarator<T extends Option> implements Comparator<T> {
-		private static final String OPTS_ORDER = "icseoupfwhkxmd";
+		private static final String OPTS_ORDER = "icseoupfwhkxmtd";
 
 		@Override
 		public int compare(T o1, T o2) {

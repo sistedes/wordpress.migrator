@@ -3,7 +3,6 @@ package es.sistedes.wordpress.migrator.dsmodel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -11,11 +10,16 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import com.google.gson.Gson;
 
 import es.sistedes.wordpress.migrator.wpmodel.Conference;
+import es.sistedes.wordpress.migrator.wpmodel.DocumentsLibrary;
 import es.sistedes.wordpress.migrator.wpmodel.Edition;
 
 public class Community extends DSpaceEntity {
 
 	private static final String BIBTEX_TAG = "<p>Ver la referencia en formato <a href=\"#\"  class=\"citaBibtex\">Bibtex</a></p>";
+	
+	public static Community from(Site site, DocumentsLibrary library) {
+		return new Community(library.getLibraryName(), library.getDescription(), library.getDescription(), site.getBaseUri() + "/SISTEDES");
+	}
 	
 	public static Community from(Site site, Conference conference) {
 		String description = conference.getDescription();
@@ -26,7 +30,7 @@ public class Community extends DSpaceEntity {
 		} catch (IndexOutOfBoundsException e) {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
-		return new Community(conference.getTitle(), description, _abstract, site.getBaseUri(), conference.getAcronym());
+		return new Community(conference.getTitle(), description, _abstract, site.getBaseUri() + "/" + conference.getAcronym());
 	}
 	
 	public static Community from(Community community, Edition edition) {
@@ -43,19 +47,14 @@ public class Community extends DSpaceEntity {
 		} catch (IndexOutOfBoundsException e) {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
-		return new Community(edition.getTitle(), description, _abstract, community.getUri(), String.valueOf(edition.getYear()));
+		return new Community(edition.getTitle(), description, _abstract, community.getUri() + "/" + String.valueOf(edition.getYear()));
 	}
 	
-	public static Community from(Site site, String name, String description) {
-		return new Community(name, description, null, site.getBaseUri(), "SISTEDES");
-	}
-	
-	private Community(String title, String description, String _abstract, String baseUri, String suffix) {
-		this.name = title;
-		this.metadata.setTitle(title);
-		if (StringUtils.isNotBlank(description)) this.metadata.setDescription(description);
-		if (StringUtils.isNotBlank(_abstract)) this.metadata.setAbstract(_abstract);
-		this.metadata.setUri(baseUri + "/" + suffix);
+	private Community(String title, String description, String _abstract, String uri) {
+		setTitle(title); 
+		setDescription(description);
+		setAbstract(_abstract);
+		setUri(uri);
 	}
 	
 	public static Community fromHttpEntity(HttpEntity entity) throws ParseException, IOException {

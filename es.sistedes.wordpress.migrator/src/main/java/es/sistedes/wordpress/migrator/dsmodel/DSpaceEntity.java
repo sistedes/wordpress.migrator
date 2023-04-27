@@ -9,27 +9,34 @@ import com.google.gson.Gson;
 public class DSpaceEntity {
 	
 	// BEGIN: JSON fields
-	protected String id;
 	protected String uuid;
 	protected String name;
 	protected String handle;
 	protected Metadata metadata = new Metadata(); 
 	// END: JSON fields
 
-	public String getId() {
-		return id;
-	}
-	
-	public void setId(String id) {
-		this.id = id;
+	public String getUuid() {
+		return uuid;
 	}
 	
 	public String getName() {
 		return name;
 	}
-	
-	public void setName(String name) {
+
+	protected void setName(String name) {
 		this.name = name;
+	}
+	
+	public String getHandle() {
+		return handle;
+	}
+	
+	public String getHandleUrl() {
+		return "https://hdl.handle.net/" + handle;
+	}
+
+	public String getSistedesHandle() {
+		return this.metadata.getUri().replaceAll("https?://hdl.handle.net/", "");
 	}
 	
 	public String getUri() {
@@ -40,21 +47,36 @@ public class DSpaceEntity {
 		this.metadata.setUri(uri);
 	}
 	
-	
-	public String getUuid() {
-		return uuid;
+	public String getTitle() {
+		return this.metadata.getTitle();
 	}
 	
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
+	public void setTitle(String title) {
+		this.metadata.setTitle(title);
 	}
 	
-	public String getHandle() {
-		return handle;
+	public String getDescription() {
+		return this.metadata.getDescription();
 	}
 	
-	public void setHandle(String handle) {
-		this.handle = handle;
+	public void setDescription(String html) {
+		this.metadata.setDescription(html);
+	}
+	
+	public String getAbstract() {
+		return this.metadata.getAbstract();
+	}
+	
+	public void setAbstract(String _abstract) {
+		this.metadata.setAbstract(_abstract);
+	}
+	
+	public String getRights() {
+		return this.metadata.getRights();
+	}
+	
+	public void setRights(String html) {
+		this.metadata.setRights(html);
 	}
 	
 	public String toJson() {
@@ -64,5 +86,4 @@ public class DSpaceEntity {
 	public HttpEntity toHttpEntity() {
 		return new StringEntity(toJson(), ContentType.APPLICATION_JSON);
 	}
-	
 }

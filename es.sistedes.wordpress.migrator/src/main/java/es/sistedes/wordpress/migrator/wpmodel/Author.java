@@ -103,7 +103,7 @@ public class Author {
 	}
 
 	private void parseName(String fullname) {
-		fullname = fullname.trim().replaceAll("\\.", ". ").replaceAll("\\s+", " ");
+		fullname = fullname.trim().replaceAll("\\.", ". ").replaceAll("\\s+", " ").replaceAll("–", "-");
 		String[] exceptionFields = exceptions.get(fullname);
 		if (exceptionFields != null && StringUtils.isNotBlank(exceptionFields[0]) && StringUtils.isNotBlank(exceptionFields[1])) {
 			firstName = exceptionFields[0];
@@ -174,6 +174,10 @@ public class Author {
 	
 	public String getLastName() {
 		return lastName;
+	}
+	
+	public String getFullName() {
+		return firstName + " " + lastName;
 	}
 	
 	public String getEmail() {

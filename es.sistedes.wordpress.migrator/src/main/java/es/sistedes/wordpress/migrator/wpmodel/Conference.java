@@ -41,6 +41,7 @@ public class Conference extends Library {
 				this.editions = Collections.unmodifiableList(Arrays.asList(gson.fromJson(
 						StringEscapeUtils.unescapeXml(
 								IOUtils.toString(DelayedStreamOpener.open(url), StandardCharsets.UTF_8)), Edition[].class)));
+				this.editions.stream().forEach(e -> e.setConference(this));
 			} catch (MalformedURLException e) {
 				// Should not happen...
 				new RuntimeException(e);
