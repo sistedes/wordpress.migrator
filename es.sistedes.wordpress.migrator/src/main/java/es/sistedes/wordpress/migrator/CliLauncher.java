@@ -52,8 +52,6 @@ public class CliLauncher {
 	private static final String END_YEAR_LONG = "end-year";
 	private static final String OUTPUT = "o";
 	private static final String OUTPUT_LONG = "output";
-	private static final String FRONTEND = "f";
-	private static final String FRONTEND_LONG = "frontend";
 	private static final String USER = "u";
 	private static final String USER_LONG = "user";
 	private static final String PASSWORD = "p";
@@ -112,7 +110,6 @@ public class CliLauncher {
 
 			URL input = new URL(commandLine.getOptionValue(INPUT));
 			URL output = new URL(commandLine.getOptionValue(OUTPUT));
-			URL frontend = new URL(commandLine.getOptionValue(FRONTEND));
 			String user = commandLine.getOptionValue(USER);
 			String password = commandLine.getOptionValue(PASSWORD);
 			String prefix = commandLine.getOptionValue(HANDLE_PREFIX);
@@ -120,7 +117,7 @@ public class CliLauncher {
 					commandLine.getOptionValue(HANDLE_PRIVATE_KEY_FILE), 
 					commandLine.getOptionValue(HANDLE_PRIVATE_KEY_PASSWORD));
 			
-			Migrator migrator = new Migrator(input, output, user, password, frontend, prefix, auth);
+			Migrator migrator = new Migrator(input, output, user, password, prefix, auth);
 
 			if (commandLine.hasOption(WAITING_TIME)) {
 				DelayedStreamOpener.setDelay(Integer.parseInt(commandLine.getOptionValue(WAITING_TIME)));
@@ -273,15 +270,6 @@ public class CliLauncher {
 				.required()
 				.build();
 		
-		Option frontendOpt = Option
-				.builder(FRONTEND)
-				.longOpt(FRONTEND_LONG)
-				.argName("frontend-url")
-				.desc("Base URL of the frontend of the DSpace Sistedes Digital Library")
-				.numberOfArgs(1)
-				.required()
-				.build();
-		
 		Option handlePrefixOpt = Option
 				.builder(HANDLE_PREFIX)
 				.longOpt(HANDLE_PREFIX_LONG)
@@ -336,7 +324,6 @@ public class CliLauncher {
 		options.addOption(conferencesOpt);
 		options.addOption(waitingOpt);
 		options.addOption(outputOpt);
-		options.addOption(frontendOpt);
 		options.addOption(userOpt);
 		options.addOption(passwordOpt);
 		options.addOption(handlePrefixOpt);
@@ -355,7 +342,7 @@ public class CliLauncher {
 	 * @param <T>
 	 */
 	private static class OptionComarator<T extends Option> implements Comparator<T> {
-		private static final String OPTS_ORDER = "icseoupfwhkxmtd";
+		private static final String OPTS_ORDER = "icseoupwhkxmtd";
 
 		@Override
 		public int compare(T o1, T o2) {
