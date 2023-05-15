@@ -26,7 +26,7 @@ public class Person extends Item {
 		setFamilyName(surname);
 		addAffiliation(affiliation);
 		addEmail(email);
-		setType(Type.PERSON.getName());
+		setType(Type.AUTHOR.getName());
 	}
 	
 	public String getGivenName() {

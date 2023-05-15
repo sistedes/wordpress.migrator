@@ -9,7 +9,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import com.google.gson.Gson;
 
-class Item extends DSpaceEntity {
+public class Item extends DSpaceEntity {
 
 	// BEGIN: JSON fields
 	// Do not delete: these properties are mandatory in
@@ -20,8 +20,12 @@ class Item extends DSpaceEntity {
 	// END: JSON fields
 	
 	public enum Type {
-		PUBLICATION("Publication"),
-		PERSON("Person");
+		AUTHOR("Autor"),
+		PAPER("Artículo"),
+		ABSTRACT("Resumen"),
+		BULLETIN("Boletín"),
+		SEMINAR("Seminario");
+		
 		
 		private String name;
 		

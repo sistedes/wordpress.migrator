@@ -54,7 +54,7 @@ public class Edition extends Track {
 	}
 	
 	public String getName() {
-		String text = excerpt.get("rendered");
+		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("Actas de las (.*? \\(.*?\\))").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1);
@@ -88,7 +88,7 @@ public class Edition extends Track {
 	}
 
 	public String getLocation() {
-		String text = excerpt.get("rendered");
+		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("\\(" + conference.getAcronym() + "\\s*\\d+\\)\\.(.*?),").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1).trim();
@@ -98,7 +98,7 @@ public class Edition extends Track {
 	}
 
 	public String getProceedingsName() {
-		String text = excerpt.get("rendered");
+		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("(Actas de las .*? \\(.*?\\))").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1).trim();

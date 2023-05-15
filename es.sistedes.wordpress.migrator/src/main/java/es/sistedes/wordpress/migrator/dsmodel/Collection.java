@@ -20,10 +20,12 @@ import es.sistedes.wordpress.migrator.wpmodel.Track;
 
 public class Collection extends DSpaceEntity {
 
-	private final static List<String> PARTICLES = Arrays.asList(new String[] { "a", "de", "en", "por", "y", "e", "la", "el", "ya"});
-	
+	private final static List<String> PARTICLES = Arrays.asList(new String[] {
+			"a", "de", "del", "en", "por", "y", "o", "u", "e", "la", "el", "lo", "las",
+			"los", "con", "desde", "hacia", "para", "por", "ya", "and", "on", "of" });
+
 	public static Collection from(Community community, Track track, Date date) {
-		String title = track.getTitle().replaceFirst("Sesi[oó]n\\s+\\d+\\W+", "");
+		String title = track.getTitle().replaceFirst("Sesi.n\\s+\\d+\\W+", "");
 		title = title.replaceFirst("^\\d+\\.\\W+", "");
 		title = title.replaceFirst("^[A-Z]+:\\W+", "");
 		Matcher matcher;
@@ -51,7 +53,7 @@ public class Collection extends DSpaceEntity {
 		setUri(uri);
 		setDate(date);
 	}
-	
+
 	public Date getDate() {
 		return this.metadata.getDate();
 	}
@@ -59,7 +61,7 @@ public class Collection extends DSpaceEntity {
 	protected void setDate(Date date) {
 		this.metadata.setDate(date);
 	}
-	
+
 	public static Collection fromHttpEntity(HttpEntity entity) throws ParseException, IOException {
 		return new Gson().fromJson(EntityUtils.toString(entity, StandardCharsets.UTF_8), Collection.class);
 	}

@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
@@ -27,13 +28,15 @@ import com.google.gson.Gson;
 
 import es.sistedes.wordpress.migrator.wpmodel.Article;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
-import es.sistedes.wordpress.migrator.wpmodel.Bulletin;
 import es.sistedes.wordpress.migrator.wpmodel.Document.License;
 
 public class Publication extends Item {
 
 	private transient static final Logger LOGGER = LoggerFactory.getLogger(Publication.class);
 	private transient static final String PDF_CACHE_DIR = "pdfcache";
+	private transient static final String PAPERS_DIR = "/articulos";
+	private transient static final String ABSTRACTS_DIR = "/resumenes";
+
 	private transient List<Author> authors = new ArrayList<>();
 	
 	public Publication(String title, String _abstract, List<String> keywords, List<Author> authors, String uri, String licenseName, Date date) {
@@ -41,14 +44,14 @@ public class Publication extends Item {
 			setAbstract(_abstract);
 			setUri(uri);
 			setDate(date);
-			setType(Type.PUBLICATION.getName());
+			setType(isAbstract() ? Type.ABSTRACT.getName() : Type.PAPER.getName());
 			setKeywords(keywords);
 			setLicense(License.from(licenseName), uri);
 			setAuthors(authors);
 		}
 
 	public static Publication from(Collection collection, Article article) {
-		File file = getFile(article.getHandle());
+		File file = getPdfFile(article.getHandle());
 		try {
 			if (file != null && !file.exists()) {
 				FileUtils.copyInputStreamToFile((InputStream) new URL(article.getDocumentUrl()).getContent(), file);
@@ -74,25 +77,6 @@ public class Publication extends Item {
 		publication.metadata.setSistedesProceedingsName(article.getTrack().getEdition().getProceedingsName());
 		publication.metadata.setSistedesProceedingsEditor(article.getTrack().getEdition().getEditors());
 		return publication;
-	}
-
-	public static Publication from(Collection collection, Bulletin bulletin) {
-		File file = getFile(bulletin.getHandle());
-		try {
-			if (file != null && !file.exists()) {
-				FileUtils.copyInputStreamToFile((InputStream) new URL(bulletin.getDocumentUrl()).getContent(), file);
-			}
-		} catch (Exception e) {
-			LOGGER.error("Unable to retrieve PDF file for "  + bulletin.getLink());
-		}
-		return new Publication(
-				bulletin.getTitle(),
-				bulletin.getDescription(),
-				Collections.emptyList(),
-				Collections.emptyList(),
-				bulletin.getHandle(), 
-				License.CC_BY_NC_ND.getName(),
-				bulletin.getDate());
 	}
 
 	@Override
@@ -150,17 +134,21 @@ public class Publication extends Item {
 	}
 	
 	public File getFile() {
-		return getFile(getSistedesHandle());
+		return getPdfFile(getSistedesHandle());
+	}
+
+	public boolean isAbstract() {
+		return Paths.get(PDF_CACHE_DIR + ABSTRACTS_DIR, RegExUtils.replaceAll(getSistedesHandle(), "/", "-") + ".pdf").toFile().exists();
 	}
 	
 	public void setAuthors(List<Author> authors) {
 		this.authors = new ArrayList<>(authors);
 		this.metadata.setSistedesAuthors(authors.stream().map(a -> a.getFirstName() + " " + a.getLastName()).collect(Collectors.toList()));
 		if (authors.stream().anyMatch(a -> StringUtils.isNotBlank(a.getEmail()))) {
-			this.metadata.setSistedesEmails(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getEmail(), "unavailable@invalid")).collect(Collectors.toList()));
+			this.metadata.setSistedesEmails(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getEmail(), "")).collect(Collectors.toList()));
 		}
 		if (authors.stream().anyMatch(a -> StringUtils.isNotBlank(a.getAffiliation()))) {
-			this.metadata.setSistedesAffiliations(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getEmail(), "Unknown Affiliation")).collect(Collectors.toList()));
+			this.metadata.setSistedesAffiliations(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getAffiliation(), "")).collect(Collectors.toList()));
 		}
 	}
 	
@@ -188,13 +176,18 @@ public class Publication extends Item {
 		}
 	}
 	
-	private static File getFile(String handle) {
+	protected static File getPdfFile(String handle) {
 		if (handle == null) {
 			return null;
+		} else if (Paths.get(PDF_CACHE_DIR + PAPERS_DIR, handle.replaceAll("/", "-") + ".pdf").toFile().exists()){
+			return Paths.get(PDF_CACHE_DIR + PAPERS_DIR, handle.replaceAll("/", "-") + ".pdf").toFile();
+		} else if (Paths.get(PDF_CACHE_DIR + ABSTRACTS_DIR, handle.replaceAll("/", "-") + ".pdf").toFile().exists()){
+			return Paths.get(PDF_CACHE_DIR + ABSTRACTS_DIR, handle.replaceAll("/", "-") + ".pdf").toFile();
 		} else {
 			return Paths.get(PDF_CACHE_DIR, handle.replaceAll("/", "-") + ".pdf").toFile();
 		}
 	}
+	
 	
 	public static Publication fromHttpEntity(HttpEntity entity) throws ParseException, IOException {
 		return new Gson().fromJson(EntityUtils.toString(entity, StandardCharsets.UTF_8), Publication.class);

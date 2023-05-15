@@ -14,8 +14,9 @@ import com.google.gson.annotations.SerializedName;
 
 public class Metadata {
 	
+	public volatile static DateFormat DATE_FORMAT_SIMPLE_W_HOUR = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 	public volatile static DateFormat DATE_FORMAT_SIMPLE = new SimpleDateFormat("yyyy-MM-dd");
-	public volatile static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T00:00:00Z'");
+	public volatile static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:00'Z'");
 	
 	// BEGIN: JSON fields
 	@SerializedName("dc.title")
@@ -84,6 +85,9 @@ public class Metadata {
 	@SerializedName("bds.contributor.affiliation")
 	private List<MetadataEntry> bdsAffiliations = new ArrayList<>();
 
+	@SerializedName("bds.contributor.bio")
+	private List<MetadataEntry> bdsBio = new ArrayList<>();
+	
 	@SerializedName("bds.conference.name")
 	private List<MetadataEntry> bdsConferenceNames = new ArrayList<>();
 
@@ -220,7 +224,11 @@ public class Metadata {
 		this.datesAvailable.clear();
 		this.datesIssued.clear();
 		this.datesAvailable.add(new MetadataEntry(DATE_FORMAT.format(date)));
-		this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
+		if (date.getHours() == 0 && date.getMinutes() == 0) {
+			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
+		} else {
+			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
+		}
 	}
 
 	public String getIsFormatOf() {
@@ -343,6 +351,16 @@ public class Metadata {
 		for (int i = 0; i < affiliations.size(); i++) {
 			this.bdsAffiliations.add(new MetadataEntry(affiliations.get(i), i + 1));
 		}
+	}
+	
+	public String getSistedesBio() {
+		return bdsBio.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	}
+	
+	public void setSistedesBio(String bio) {
+		if (StringUtils.isBlank(bio)) return;
+		this.bdsBio.clear();
+		this.bdsBio.add(new MetadataEntry(bio));
 	}
 	
 	public String getSistedesConferenceName() {

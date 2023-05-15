@@ -31,8 +31,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPatch;
@@ -60,11 +62,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import es.sistedes.wordpress.migrator.dsmodel.BulletinPublication;
 import es.sistedes.wordpress.migrator.dsmodel.Bundle;
 import es.sistedes.wordpress.migrator.dsmodel.Collection;
 import es.sistedes.wordpress.migrator.dsmodel.Community;
+import es.sistedes.wordpress.migrator.dsmodel.Item;
 import es.sistedes.wordpress.migrator.dsmodel.Person;
 import es.sistedes.wordpress.migrator.dsmodel.Publication;
+import es.sistedes.wordpress.migrator.dsmodel.SeminarPublication;
 import es.sistedes.wordpress.migrator.dsmodel.Site;
 import es.sistedes.wordpress.migrator.wpmodel.Article;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
@@ -74,6 +79,7 @@ import es.sistedes.wordpress.migrator.wpmodel.Conference;
 import es.sistedes.wordpress.migrator.wpmodel.Document.License;
 import es.sistedes.wordpress.migrator.wpmodel.DocumentsLibrary;
 import es.sistedes.wordpress.migrator.wpmodel.Edition;
+import es.sistedes.wordpress.migrator.wpmodel.Seminar;
 import es.sistedes.wordpress.migrator.wpmodel.Track;
 import net.handle.hdllib.AbstractMessage;
 import net.handle.hdllib.AbstractRequest;
@@ -105,6 +111,9 @@ public class Migrator {
 	private final static String X_XSRF_TOKEN = "X-XSRF-TOKEN";
 	private final static String AUTHORIZATION_TOKEN = "Authorization";
 
+	private final static String ORIGINAL_BUNDLE = "ORIGINAL";
+	private final static String OTHER_BUNDLE = "OTHER";
+
 	private static final String API_ENDPOINT = "/api";
 	private static final String AUTHN_LOGIN_ENDPOINT = API_ENDPOINT + "/authn/login";
 	private static final String SITES_ENDPOINT = API_ENDPOINT + "/core/sites";
@@ -116,9 +125,9 @@ public class Migrator {
 	private static final String BUNDLES_BITSTREAMS_ENDPOINT = API_ENDPOINT + "/core/bundles/%s/bitstreams";
 	private static final String RESOURCE_POLICIES_ENDPOINT = API_ENDPOINT + "/authz/resourcepolicies";
 	private static final String RESOURCE_POLICIES_SEARCH_ENDPOINT = RESOURCE_POLICIES_ENDPOINT + "/search/resource?uuid=%s";
-	private static final String AUTHOR_PUBLICATION_RELATIONSHIP_ENDPOINT = API_ENDPOINT + "/core/relationships?relationshipType=1";
-	private static final String METADATASCHEMAS_ENDPOINT = API_ENDPOINT + "/core/metadataschemas";
-	private static final String METADATAFIELDS_ENDPOINT = API_ENDPOINT + "/core/metadatafields";
+	private static final String AUTHOR_PAPER_RELATIONSHIP_ENDPOINT = API_ENDPOINT + "/core/relationships?relationshipType=11";
+	private static final String AUTHOR_ABSTRACT_RELATIONSHIP_ENDPOINT = API_ENDPOINT + "/core/relationships?relationshipType=12";
+	private static final String AUTHOR_SEMINAR_RELATIONSHIP_ENDPOINT = API_ENDPOINT + "/core/relationships?relationshipType=13";
 	private static final String DISCOVER_SEARCH_OBJECTS_ENDPOINT = API_ENDPOINT + "/discover/search/objects";
 
 	private class Identifiable {
@@ -170,7 +179,6 @@ public class Migrator {
 	private URL output;
 	private String user;
 	private String password;
-	private URL frontend;
 	private String prefix;
 	private DSpaceAuth dspaceAuth;
 	private PublicKeyAuthenticationInfo auth;
@@ -261,12 +269,11 @@ public class Migrator {
 		}
 	}
 
-	public Migrator(URL input, URL output, String user, String password, URL frontend, String prefix, PublicKeyAuthenticationInfo auth) {
+	public Migrator(URL input, URL output, String user, String password, String prefix, PublicKeyAuthenticationInfo auth) {
 		this.input = input;
 		this.output = output;
 		this.user = user;
 		this.password = password;
-		this.frontend = frontend;
 		this.prefix = prefix;
 		this.auth = auth;
 		this.options = new HashMap<Options, Object>();
@@ -315,38 +322,34 @@ public class Migrator {
 	public synchronized void migrate() throws MigrationException {
 		try {
 			dspaceAuth.login();
-			try {
-				addCustomMetadata();
-			} catch (Exception e) {
-				logger.error("Unable to add custom metadata", e);
+
+			BDSistedes bdSistedes = new BDSistedes(input);
+			
+			// We need the Sistedes community to have a Global Authors Collection
+			Community sistedesCommunity = findSistedesCommunity(bdSistedes);
+			if (sistedesCommunity == null) {
+				sistedesCommunity = createSistedesCommunity(bdSistedes);
 			}
 			
-			BDSistedes bdSistedes = new BDSistedes(input);
+			Collection authorsCollection = createCollection(sistedesCommunity, 
+					new Collection(
+							"Autores",
+							"Todos los autores que han contribuido a las jornadas Sistedes", 
+							"Todos los autores que han contribuido a las jornadas Sistedes", 
+							sistedesCommunity.getUri() + "/AUTHORS",
+							null));
 
-			migrateConferences(bdSistedes);
 			if (isMigrateDocumentsEnabled()) {
+				migrateSeminars(bdSistedes, authorsCollection);
 				migrateBulletins(bdSistedes);
 			}
+			migrateConferences(bdSistedes, authorsCollection);
 		} catch (Exception e) {
 			throw new MigrationException(e);
 		}
 	}
 
-	private void migrateConferences(BDSistedes bdSistedes) throws IOException, MigrationException, ParseException, URISyntaxException {
-		// We need the Sistedes community to have a Global Authors Collection
-		Community sistedesCommunity = findSistedesCommunity(bdSistedes);
-		if (sistedesCommunity == null) {
-			sistedesCommunity = createSistedesCommunity(bdSistedes);
-		}
-		
-		Collection authorsCollection = createCollection(sistedesCommunity, 
-				new Collection(
-						"Autores",
-						"Colección de todos los autores the han contribuido a las jornadas Sistedes", 
-						"Colección de todos los autores the han contribuido a las jornadas Sistedes", 
-						sistedesCommunity.getUri() + "/AUTHORS",
-						null));
-		
+	private void migrateConferences(BDSistedes bdSistedes, Collection authorsCollection) throws IOException, MigrationException, ParseException, URISyntaxException {
 		// NOTE: We use for loops instead of streams since the getters may throw
 		// exceptions
 		for (Conference conference : bdSistedes.getConferencesLibrary().getConferences((c1, c2) -> StringUtils.compare(c1.getTitle(), c2.getTitle()))) {
@@ -394,7 +397,7 @@ public class Migrator {
 		}
 	}
 
-	private void migrateBulletins(BDSistedes bdSistedes) throws IOException, MigrationException, ParseException, URISyntaxException {
+	private void migrateBulletins(BDSistedes bdSistedes) throws Exception {
 		Community sistedesCommunity = findSistedesCommunity(bdSistedes);
 		if (sistedesCommunity == null) {
 			sistedesCommunity = createSistedesCommunity(bdSistedes);
@@ -408,6 +411,24 @@ public class Migrator {
 		for (Bulletin bulletin: documentsLibrary.getBulletins((b1, b2) -> b1.getDate().compareTo(b2.getDate()))) {
 			logger.debug("[-BULLETIN] Migrating '" + bulletin.getTitle() + "'.");
 			createPublication(bulletinsCollection, bulletin);
+		}
+		logger.info("[<Bulletin] Migration of Sistedes Bulletins finished");
+	}
+
+	private void migrateSeminars(BDSistedes bdSistedes, Collection authorsCollection) throws Exception {
+		Community sistedesCommunity = findSistedesCommunity(bdSistedes);
+		if (sistedesCommunity == null) {
+			sistedesCommunity = createSistedesCommunity(bdSistedes);
+		}
+		DocumentsLibrary documentsLibrary = bdSistedes.getDocumentsLibrary();
+		if (documentsLibrary.getSeminars().isEmpty()) {
+			return;
+		}
+		logger.info("[>Bulletin] Starting migration of Sistedes Seminars");
+		Collection seminarsCollection = createSeminarsCollection(sistedesCommunity);
+		for (Seminar seminar : documentsLibrary.getSeminars((s1, s2) -> s1.getDate().compareTo(s2.getDate()))) {
+			logger.debug("[-BULLETIN] Migrating '" + seminar.getTitle() + "'.");
+			createPublication(seminarsCollection, authorsCollection, seminar);
 		}
 		logger.info("[<Bulletin] Migration of Sistedes Bulletins finished");
 	}
@@ -522,7 +543,7 @@ public class Migrator {
 		return collection;
 	}
 	
-	private Collection createBulletinsCollection(final Community parent) throws MigrationException, IOException, ParseException, URISyntaxException {
+	private Collection createBulletinsCollection(final Community parent) throws Exception {
 		String name = "Boletines de prensa";
 		String _abstract = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral"
 				+ " que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que"
@@ -539,6 +560,19 @@ public class Migrator {
 				+ "editores enviando un mensaje de correo electrónico a la dirección "
 				+ "<a href=\"mailto:noticias@sistedes.es\">noticias@sistedes.es</a>.";
 		Collection collection = new Collection(name, _abstract, description, parent.getUri() + "/BOLETINES", null);
+		if (!isDryRun()) {
+			collection = createCollection(parent, collection);
+		}
+		return collection;
+	}
+
+	private Collection createSeminarsCollection(final Community parent) throws Exception {
+		String name = "Seminarios Sistedes";
+		String _abstract = "Los Seminarios Sistedes son charlas sobre temas de interés para nuestra comunidad científica,"
+				+ " impartidos por destacados miembros de la misma y/o reconocidos expertos en las materias objeto de los mismos.";
+		String description = "Los Seminarios Sistedes son charlas sobre temas de interés para nuestra comunidad científica,"
+				+ " impartidos por destacados miembros de la misma y/o reconocidos expertos en las materias objeto de los mismos.";
+		Collection collection = new Collection(name, _abstract, description, parent.getUri() + "/SEMINARIOS", null);
 		if (!isDryRun()) {
 			collection = createCollection(parent, collection);
 		}
@@ -584,48 +618,15 @@ public class Migrator {
 					result = createPublication(parent, publication);
 				}
 				// Second, create the authors...
-				List<Person> personsInDSpace = new ArrayList<>();
 				{
-					for (Author author : publication.getAuthors()) {
-						Person person = findPersonFromAuthor(author);
-						if (person == null) {
-							person = createPersonFromAuthor(authorsCollection, author);
-						} else {
-							updatePersonFromAuthor(person, author);
-						}
-						personsInDSpace.add(person);
-					}
+					createAuthorsForPublication(authorsCollection, publication.getAuthors(), result);
 				}
-				// Third, link the authors with the publication
-				{
-					for (Person person : personsInDSpace) {
-						HttpPost post = new HttpPost(output + AUTHOR_PUBLICATION_RELATIONSHIP_ENDPOINT);
-						post.setEntity(
-								new StringEntity(MessageFormat.format("{0}{1}/{2} \n {0}{1}/{3}", 
-									output, ITEMS_ENDPOINT, result.getUuid(), person.getUuid()),
-								ContentType.create("text/uri-list")));
-						post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
-						post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
-						
-						try (CloseableHttpResponse response = client.execute(post)) {
-							if (response.getCode() != HttpStatus.SC_CREATED) {
-								throw new MigrationException(
-										MessageFormat.format("Unable to create Relationship between ''{0}'' and ''{1}''. HTTP request returned code {2}.",
-												person.getUuid(), result.getUuid(), response.getCode()));
-							}
-							EntityUtils.consume(response.getEntity());
-							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-								dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
-							}
-						}
-					}
-				}
-				// Fourth, create a bundle for the files...
+				// Third, create a bundle for the files...
 				File file = publication.getFile();
 				if (!file.exists()) {
 					logger.info("Article '" + article.getLink() + "' does not have a file! Skipping file upload...");
 				} else {
-					Identifiable uploadedFile = attachFile(result, file);
+					Identifiable uploadedFile = attachBinaryFiles(ORIGINAL_BUNDLE, result, new File[] { file }).get(0);
 	
 					// And if the article is restricted, remove the resource policy
 					// (which at this point, should be a single one: allow anonymous read access)
@@ -674,6 +675,95 @@ public class Migrator {
 		}
 		return result;
 	}
+
+	private void createAuthorsForPublication(final Collection authorsCollection, final List<Author> authors, Publication result) throws Exception {
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				// First, create the authors...
+				List<Person> personsInDSpace = new ArrayList<>();
+				{
+					for (Author author : authors) {
+						Person person = findPersonFromAuthor(author);
+						if (person == null) {
+							person = createPersonFromAuthor(authorsCollection, author);
+						} else {
+							updatePersonFromAuthor(person, author);
+						}
+						personsInDSpace.add(person);
+					}
+				}
+				// Second, link the authors with the publication
+				{
+					for (Person person : personsInDSpace) {
+						String endpoint = result.isAbstract() ? AUTHOR_ABSTRACT_RELATIONSHIP_ENDPOINT : AUTHOR_PAPER_RELATIONSHIP_ENDPOINT;
+						HttpPost post = new HttpPost(output + endpoint);
+						post.setEntity(
+								new StringEntity(MessageFormat.format("{0}{1}/{2} \n {0}{1}/{3}", 
+									output, ITEMS_ENDPOINT, result.getUuid(), person.getUuid()),
+								ContentType.create("text/uri-list")));
+						post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
+						post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
+						
+						try (CloseableHttpResponse response = client.execute(post)) {
+							if (response.getCode() != HttpStatus.SC_CREATED) {
+								throw new MigrationException(
+										MessageFormat.format("Unable to create Relationship between ''{0}'' and ''{1}''. HTTP request returned code {2}.",
+												person.getUuid(), result.getUuid(), response.getCode()));
+							}
+							EntityUtils.consume(response.getEntity());
+							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+								dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void createAuthorsForSeminarPublication(final Collection authorsCollection, final List<Author> authors, Publication result) throws Exception {
+		if (!isDryRun()) {
+			try (CloseableHttpClient client = httpClientBuilder.build()) {
+				// First, create the authors...
+				List<Person> personsInDSpace = new ArrayList<>();
+				{
+					for (Author author : authors) {
+						Person person = findPersonFromAuthor(author);
+						if (person == null) {
+							person = createPersonFromAuthor(authorsCollection, author);
+						} else {
+							updatePersonFromAuthor(person, author);
+						}
+						personsInDSpace.add(person);
+					}
+				}
+				// Second, link the authors with the publication
+				{
+					for (Person person : personsInDSpace) {
+						HttpPost post = new HttpPost(output + AUTHOR_SEMINAR_RELATIONSHIP_ENDPOINT);
+						post.setEntity(
+								new StringEntity(MessageFormat.format("{0}{1}/{2} \n {0}{1}/{3}", 
+										output, ITEMS_ENDPOINT, result.getUuid(), person.getUuid()),
+										ContentType.create("text/uri-list")));
+						post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
+						post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
+						
+						try (CloseableHttpResponse response = client.execute(post)) {
+							if (response.getCode() != HttpStatus.SC_CREATED) {
+								throw new MigrationException(
+										MessageFormat.format("Unable to create Relationship between ''{0}'' and ''{1}''. HTTP request returned code {2}.",
+												person.getUuid(), result.getUuid(), response.getCode()));
+							}
+							EntityUtils.consume(response.getEntity());
+							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+								dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 	
 	private Person findPersonFromAuthor(Author author) throws MigrationException {
 		Person result = null;
@@ -687,12 +777,34 @@ public class Migrator {
 						// Try to match the Person using any of the saved e-mails...
 						if (StringUtils.equalsIgnoreCase(author.getEmail(), foundEmail)) {
 							// ... but make sure that the names have at least some similarity
-							if (new JaroWinklerSimilarity().apply(author.getFullName(), found.get(0).getFullName()) > 0.7) {
-								messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-								result = found.get(0);
-							} else {
-								messageTemplate = "[!PERSON] Exact match found for e-mail ''{2}'' of ''{0}, {1}'', but name seems different from ''{3}, {4} ({5})''";
-								result = null;
+							for (int i = 0; i < found.size(); i++) {
+								String name1 = author.getFullName();
+								String name2 = found.get(i).getFullName();
+								Integer distance = new LevenshteinDistance().apply(name1, name2);
+								float normalizedDistance = (float) distance / (float) Math.max(author.getFullName().length(), name2.length());
+								if (normalizedDistance == 0) {
+									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									result = found.get(i);
+									break;
+								} else if (normalizedDistance <= 0.1) {
+									messageTemplate = "[!PERSON] Almost exact (0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									result = found.get(i);
+									break;
+								} else if (normalizedDistance <= 0.3) {
+									messageTemplate = "[!PERSON] Approximate match (0.25) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									result = found.get(i);
+									break;
+								} else if (normalizedDistance <= 0.5) {
+									messageTemplate = "[!PERSON] Approximate match (0.5) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									result = found.get(i);
+									break;
+								} else if (normalizedDistance <= 0.8) {
+									messageTemplate = "[!PERSON] Approximate match (0.75) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									continue;
+								} else {
+									Toolkit.getDefaultToolkit().beep();
+									continue;
+								}
 							}
 						} else {
 							result = null;
@@ -710,7 +822,7 @@ public class Migrator {
 				} else if
 					(
 						// Found 
-						found != null 
+						found.size() > 0 
 						// and
 						&&
 						(
@@ -859,7 +971,7 @@ public class Migrator {
 			URIBuilder builder = new URIBuilder(output + DISCOVER_SEARCH_OBJECTS_ENDPOINT);
 			builder.setParameter("dsoType", "item");
 			builder.setParameter("sort", "score,DESC");
-			builder.setParameter("f.entityType", "Person,equals");
+			builder.setParameter("f.entityType", Item.Type.AUTHOR.getName() + ",equals");
 			builder.setParameter("query", query.replaceAll(":", "")); 	// In some cases, a URL is provided instead on an email.
 																		// In such a case, remove the colon since the API fails to process it
 			
@@ -870,7 +982,7 @@ public class Migrator {
 			try (CloseableHttpResponse response = client.execute(get)) {
 				if (response.getCode() != HttpStatus.SC_OK) {
 					throw new MigrationException(
-							MessageFormat.format("Unable to create Person for query ''{0}''. HTTP request returned code {1}.",
+							MessageFormat.format("Unable to create Author for query ''{0}''. HTTP request returned code {1}.",
 									query, response.getCode()));
 				}
 				JsonObject object = new Gson().fromJson(EntityUtils.toString(response.getEntity()), JsonObject.class);
@@ -1042,21 +1154,45 @@ public class Migrator {
 		return result;
 	}
 
-	private Publication createPublication(final Collection parent, final Bulletin bulletin) throws MigrationException {
-		Publication publication = Publication.from(parent, bulletin);
+	private Publication createPublication(final Collection parent, final Bulletin bulletin) throws Exception {
+		Publication publication = BulletinPublication.from(parent, bulletin);
 		if (!isDryRun()) {
 			publication = createPublication(parent, publication);
 			// Now, create a bundle... 
 			File file = publication.getFile();
 			if (!file.exists()) {
-				logger.info("Bulletin '" + bulletin.getLink() + "' does not have a file! Skipping file upload...");
+				logger.error("Bulletin '" + bulletin.getLink() + "' does not have a file! Skipping file upload...");
 			} else {
-				attachFile(publication, file);
+				attachBinaryFiles(ORIGINAL_BUNDLE, publication, new File[] { file });
 			}
 		}
 		return publication;
 	}
 
+	private Publication createPublication(final Collection parent, final Collection authorsCollection, final Seminar seminar) throws Exception {
+		SeminarPublication publication = SeminarPublication.from(parent, seminar);
+		Publication result = publication;
+		if (!isDryRun()) {
+			// Create the publication
+			result = createPublication(parent, publication);
+			// Create the authors
+			createAuthorsForSeminarPublication(authorsCollection, publication.getAuthors(), result);
+			// Now, create bundles... 
+			final File[] files = publication.getFiles();
+			if (files.length == 0) {
+				logger.error("Seminar '" + seminar.getTitle() + "' does not have files! Skipping file upload...");
+			} else {
+				attachBinaryFiles(ORIGINAL_BUNDLE, result,
+						Arrays.asList(files).stream().filter(f -> f.getName().endsWith("video.mp4"))
+						.collect(Collectors.toList()).toArray(s -> new File[s]));
+				attachBinaryFiles(OTHER_BUNDLE, result,
+						Arrays.asList(files).stream().filter(f -> !f.getName().endsWith("video.mp4"))
+						.collect(Collectors.toList()).toArray(s -> new File[s]));
+			}
+		}
+		return result;
+	}
+	
 	private Publication createPublication(final Collection parent, final Publication publication) throws  MigrationException {
 		Publication result = null;
 		try (CloseableHttpClient client = httpClientBuilder.build()) {
@@ -1082,7 +1218,14 @@ public class Migrator {
 			}
 			// Now that the Publication has been already created, update some fields...
 			{
-				result.setDate(parent.getDate());
+				if (parent.getDate() != null) {
+					// If parent.getDate() != we're processing a Track/Edition
+					result.setDate(parent.getDate());
+				} else {
+					// If it's null, it's a bulletin or a Seminar, so let's overwrite again 
+					// the date to avoid duplicating 'dc.date.available'
+					result.setDate(publication.getDate());
+				}
 				result.setUri(publication.getUri());
 	
 				HttpPut put = new HttpPut(output + ITEMS_ENDPOINT + "/" + result.getUuid());
@@ -1108,12 +1251,13 @@ public class Migrator {
 		return result;
 	}
 	
-	private Identifiable attachFile(final Publication publication, final File file) throws MigrationException {
-		Identifiable uploadedFile = null;
+	private List<Identifiable> attachBinaryFiles(final String bundleName, final Publication publication, final File[] files) throws Exception {
+		List<Identifiable> result = new ArrayList<>();
 		try (CloseableHttpClient client = httpClientBuilder.build()) {
-			Bundle bundle = new Bundle("ORIGINAL");
+			Bundle bundle = new Bundle(bundleName);
 			// First create a Bundle...
 			{
+				logger.info(MessageFormat.format( "Creating Bundle for ''{0}''.", publication.getTitle()));
 				HttpPost post = new HttpPost(output + String.format(ITEM_BUNDLES_ENDPOINT, publication.getUuid()));
 				post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
 				post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
@@ -1131,142 +1275,38 @@ public class Migrator {
 					}
 				}
 			}
-
+			
 			// Afterwards, upload a file inside the bundle...
 			{
-				HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
-				post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
-				post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
-
-				MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-				builder.addBinaryBody("file", file, ContentType.APPLICATION_PDF, file.getName());
-				post.setEntity(builder.build());
-
-				try (CloseableHttpResponse response = client.execute(post)) {
-					if (response.getCode() != HttpStatus.SC_CREATED) {
-						throw new MigrationException(
-								MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
-								publication.getTitle(), response.getCode()));
-					}
-					String json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-					uploadedFile = new Gson().fromJson(json, Identifiable.class);
-					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-						dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
-					}
-				}
-			}
-		} catch (Exception e) {
-			throw new MigrationException(e);
-		}
-		return uploadedFile;
-	}
-	
-	private void addCustomMetadata() throws Exception {
-
-		if (!isDryRun()) {
-			try (CloseableHttpClient client = httpClientBuilder.build()) {
-				Identifiable schema = null;
-				{
-					JsonObject obj = new JsonObject();
-					obj.addProperty("prefix", "bds");
-					obj.addProperty("namespace", "https://biblioteca.sistedes.es/Publication");
-					obj.addProperty("type", "metadataschema");
-					
-					HttpPost post = new HttpPost(output + METADATASCHEMAS_ENDPOINT);
-					post.setEntity(new StringEntity(new Gson().toJson(obj), ContentType.APPLICATION_JSON));
+				for (File file : files) {
+					logger.info(MessageFormat.format( "Uploading ''{0}'' ({1,number,#.#} MB)...",
+							file.getName(), FileUtils.sizeOfAsBigInteger(file).doubleValue() / (1024D * 1024D)));
+					HttpPost post = new HttpPost(output + String.format(BUNDLES_BITSTREAMS_ENDPOINT, bundle.getUuid()));
 					post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
 					post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
-	
+					
+					MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+					builder.addBinaryBody("file", file, ContentType.DEFAULT_BINARY, file.getName());
+					post.setEntity(builder.build());
+					
 					try (CloseableHttpResponse response = client.execute(post)) {
 						if (response.getCode() != HttpStatus.SC_CREATED) {
-							logger.error(MessageFormat.format(
-									"Unable to create 'Sistedes' metadata schema. HTTP request returned code {0}.",
-									response.getCode()));
+							throw new MigrationException(
+									MessageFormat.format("Unable to upload file for ''{0}''. HTTP request returned code {1}.",
+											publication.getTitle(), response.getCode()));
 						}
-						schema = new Gson().fromJson(EntityUtils.toString(response.getEntity()), Identifiable.class);
+						String json = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+						result.add(new Gson().fromJson(json, Identifiable.class));
 						if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
 							dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
 						}
 					}
 				}
-				if (schema != null && StringUtils.isNotBlank(schema.id)) {	
-					URIBuilder builder = new URIBuilder(output + METADATAFIELDS_ENDPOINT);
-			        builder.setParameter("schemaId", schema.id);
-					HttpPost post = new HttpPost(builder.build());
-					
-					List<JsonObject> objs = new ArrayList<>();
-					objs.add(new JsonObject());
-					objs.get(0).addProperty("element", "contributor");
-					objs.get(0).addProperty("qualifier", "author");
-					objs.get(0).addProperty("scopeNote", "Full author name, as specified in the original WordPress-based Sistedes Digital Library.");
-
-					objs.add(new JsonObject());
-					objs.get(1).addProperty("element", "contributor");
-					objs.get(1).addProperty("qualifier", "email");
-					objs.get(1).addProperty("scopeNote", "Author e-mail, as specified in the original WordPress-based Sistedes Digital Library.");
-	
-					objs.add(new JsonObject());
-					objs.get(2).addProperty("element", "contributor");
-					objs.get(2).addProperty("qualifier", "affiliation");
-					objs.get(2).addProperty("scopeNote", "Author affiliation, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(3).addProperty("element", "conference");
-					objs.get(3).addProperty("qualifier", "name");
-					objs.get(3).addProperty("scopeNote", "Name of the conference in which the publication was presented, as specified in the original WordPress-based Sistedes Digital Library.");
-	
-					objs.add(new JsonObject());
-					objs.get(4).addProperty("element", "edition");
-					objs.get(4).addProperty("qualifier", "name");
-					objs.get(4).addProperty("scopeNote", "Full name of the edition in which the publication was presented, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(5).addProperty("element", "edition");
-					objs.get(5).addProperty("qualifier", "year");
-					objs.get(5).addProperty("scopeNote", "Year of the edition in which the publication was presented, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(6).addProperty("element", "edition");
-					objs.get(6).addProperty("qualifier", "date");
-					objs.get(6).addProperty("scopeNote", "Full date of the edition in which the publication was presented, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(7).addProperty("element", "edition");
-					objs.get(7).addProperty("qualifier", "location");
-					objs.get(7).addProperty("scopeNote", "City where the edition in which the publication was presented was held, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(8).addProperty("element", "proceedings");
-					objs.get(8).addProperty("qualifier", "editors");
-					objs.get(8).addProperty("scopeNote", "Strip specifying the editors of the proceedings in which the publication was published, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					objs.add(new JsonObject());
-					objs.get(9).addProperty("element", "proceedings");
-					objs.get(9).addProperty("qualifier", "name");
-					objs.get(9).addProperty("scopeNote", "Full name of the proceedings in which the publication was published, as specified in the original WordPress-based Sistedes Digital Library.");
-					
-					for (JsonObject obj : objs) {
-						post.setEntity(new StringEntity(obj.toString(), ContentType.APPLICATION_JSON));
-						post.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
-						post.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
-		
-						try (CloseableHttpResponse response = client.execute(post)) {
-							if (response.getCode() != HttpStatus.SC_CREATED) {
-								logger.error(
-										MessageFormat.format("Unable to create metadata element from ''{0}''. HTTP request returned code {1}.",
-										obj.toString(), response.getCode()));
-							}
-							EntityUtils.consume(response.getEntity());
-							if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
-								dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
-							}
-						}
-					}
-				}
 			}
 		}
+		return result;
 	}
-
+	
 	private Site getSite() throws IOException, ParseException {
 		if (site == null) {
 			try (CloseableHttpClient client = httpClientBuilder.build()) {

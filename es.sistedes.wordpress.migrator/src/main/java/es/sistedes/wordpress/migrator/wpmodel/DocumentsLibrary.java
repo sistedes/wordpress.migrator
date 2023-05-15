@@ -21,7 +21,7 @@ public class DocumentsLibrary extends Library {
 	private transient List<Bulletin> bulletins;
 
 	public String getLibraryName() {
-		return "Sistedes";
+		return "Archivo documental de Sistedes";
 	}
 	
 	public String getDescription() {
@@ -85,6 +85,10 @@ public class DocumentsLibrary extends Library {
 	
 	public List<Bulletin> getBulletins(Comparator<Bulletin> comparator) throws IOException {
 		return getBulletins().stream().sorted(comparator).collect(Collectors.toList());
+	}
+	
+	public List<Seminar> getSeminars(Comparator<Seminar> comparator) throws IOException {
+		return getSeminars().stream().sorted(comparator).collect(Collectors.toList());
 	}
 	
 	private URL getBaseURL() throws MalformedURLException {
