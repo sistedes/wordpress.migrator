@@ -443,7 +443,7 @@ public class Migrator {
 			logger.debug("[-BULLETIN] Migrating '" + seminar.getTitle() + "'.");
 			createPublication(seminarsCollection, authorsCollection, seminar);
 		}
-		logger.info("[<Bulletin] Migration of Sistedes Bulletins finished");
+		logger.info("[<Bulletin] Migration of Sistedes Seminars finished");
 	}
 	
 	private Community createConferenceCommunity(final Site site, final Conference conference) throws MigrationException, IOException, ParseException {

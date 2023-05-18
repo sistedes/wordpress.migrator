@@ -151,7 +151,13 @@ public class Metadata {
 	public void setAbstract(String abs) {
 		if (StringUtils.isBlank(abs)) return;
 		this.abstracts.clear();
-		this.abstracts.add(new MetadataEntry(abs));
+		this.abstracts.add(new MetadataEntry(
+				abs
+//				FlexmarkHtmlConverter.builder(
+//						FlexmarkHtmlConverter.builder().set(FlexmarkHtmlConverter.TYPOGRAPHIC_QUOTES, false)
+//						.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
+//				).build().convert(abs)
+				));
 	}
 	
 	public String getToc() {
@@ -374,7 +380,13 @@ public class Metadata {
 	public void setContributorBio(String bio) {
 		if (StringUtils.isBlank(bio)) return;
 		this.contributorsBios.clear();
-		this.contributorsBios.add(new MetadataEntry(bio));
+		this.contributorsBios.add(new MetadataEntry(
+				bio
+//				FlexmarkHtmlConverter.builder(
+//				FlexmarkHtmlConverter.builder().set(FlexmarkHtmlConverter.TYPOGRAPHIC_QUOTES, false)
+//				.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
+//				).build().convert(bio)
+				));
 	}
 	
 	public String getSistedesConferenceName() {
