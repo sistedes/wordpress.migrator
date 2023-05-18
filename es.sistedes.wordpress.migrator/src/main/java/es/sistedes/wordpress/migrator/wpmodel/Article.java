@@ -64,7 +64,7 @@ public class Article extends Document {
 		if (cleanTitle != null) return cleanTitle;
 		String rawTitle = StringUtils.trimToNull(title.get("rendered"));
 		Matcher matcher;
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\((:?[Tt]ool\\s*)[Dd]demo(:?straci[oó]n)?\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^«?(.*?)»?\\s*\\((:?[Tt]ool\\s*)[Dd]demo(?:straci[oó]n)?\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
