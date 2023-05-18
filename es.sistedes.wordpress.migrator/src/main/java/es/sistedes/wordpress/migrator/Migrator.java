@@ -437,13 +437,13 @@ public class Migrator {
 		if (documentsLibrary.getSeminars().isEmpty()) {
 			return;
 		}
-		logger.info("[>Bulletin] Starting migration of Sistedes Seminars");
+		logger.info("[>Seminar] Starting migration of Sistedes Seminars");
 		Collection seminarsCollection = createSeminarsCollection(sistedesCommunity);
 		for (Seminar seminar : documentsLibrary.getSeminars((s1, s2) -> s1.getDate().compareTo(s2.getDate()))) {
 			logger.debug("[-BULLETIN] Migrating '" + seminar.getTitle() + "'.");
 			createPublication(seminarsCollection, authorsCollection, seminar);
 		}
-		logger.info("[<Bulletin] Migration of Sistedes Seminars finished");
+		logger.info("[<Seminar] Migration of Sistedes Seminars finished");
 	}
 	
 	private Community createConferenceCommunity(final Site site, final Conference conference) throws MigrationException, IOException, ParseException {
