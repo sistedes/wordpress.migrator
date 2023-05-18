@@ -11,8 +11,15 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.gson.annotations.SerializedName;
+import com.vladsch.flexmark.html2md.converter.FlexmarkHtmlConverter;
+import com.vladsch.flexmark.util.data.DataHolder;
 
 public class Metadata {
+	
+	private volatile static DataHolder HTML_2_MD_OPTIONS = FlexmarkHtmlConverter.builder()
+													.set(FlexmarkHtmlConverter.TYPOGRAPHIC_QUOTES, false)
+													.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
+													.set(FlexmarkHtmlConverter.SKIP_CHAR_ESCAPE, true);
 	
 	public volatile static DateFormat DATE_FORMAT_SIMPLE_W_HOUR = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 	public volatile static DateFormat DATE_FORMAT_SIMPLE = new SimpleDateFormat("yyyy-MM-dd");
@@ -152,11 +159,8 @@ public class Metadata {
 		if (StringUtils.isBlank(abs)) return;
 		this.abstracts.clear();
 		this.abstracts.add(new MetadataEntry(
-				abs
-//				FlexmarkHtmlConverter.builder(
-//						FlexmarkHtmlConverter.builder().set(FlexmarkHtmlConverter.TYPOGRAPHIC_QUOTES, false)
-//						.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
-//				).build().convert(abs)
+//				abs
+				FlexmarkHtmlConverter.builder(HTML_2_MD_OPTIONS).build().convert(abs)
 				));
 	}
 	
@@ -381,11 +385,8 @@ public class Metadata {
 		if (StringUtils.isBlank(bio)) return;
 		this.contributorsBios.clear();
 		this.contributorsBios.add(new MetadataEntry(
-				bio
-//				FlexmarkHtmlConverter.builder(
-//				FlexmarkHtmlConverter.builder().set(FlexmarkHtmlConverter.TYPOGRAPHIC_QUOTES, false)
-//				.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
-//				).build().convert(bio)
+//				bio
+				FlexmarkHtmlConverter.builder(HTML_2_MD_OPTIONS).build().convert(bio)
 				));
 	}
 	
