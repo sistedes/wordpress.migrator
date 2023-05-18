@@ -33,8 +33,12 @@ public abstract class Document {
 			// We include here some hardcoded strings, because we 
 			// can find a lot of shit in the current Wordpress Library
 			// which supposedly means CC-BY
-			if ("CreativeCommons".equals(longName) || "1".equals(longName)) {
+			if ("CreativeCommons".equals(longName)
+					|| "1".equals(longName)
+					|| "CreativeCommons Reconocimiento (by)".equals(longName)) {
 				return License.CC_BY;
+			} else if ("CreativeCommons Reconocimiento – NoComercial – CompartirIgual (by-nc-sa)".equals(longName)) {
+				return License.CC_BY_NC_SA;
 			}
 			for (License license : License.values()) {
 	            if (license.name.equals(longName)) {

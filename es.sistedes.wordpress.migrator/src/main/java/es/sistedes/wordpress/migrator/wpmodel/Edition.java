@@ -14,12 +14,16 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 
 import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
 public class Edition extends Track {
+	
+	private transient final static Logger logger = LoggerFactory.getLogger(Edition.class);
 	
 	// BEGIN: JSON fields
 	protected Date date; 
@@ -107,13 +111,42 @@ public class Edition extends Track {
 		}
 	}
 
-	public String getEditors() {
-		String text = excerpt.get("rendered");
-		Matcher matcher = Pattern.compile("<p>(.*?)\\w*\\([Ee]ds?\\.\\)").matcher(text);
+	public List<String> getEditors() {
+		List<String> editors = new ArrayList<>();
+		String text = excerpt.get("rendered").replaceAll(" ", " "); // replace non-breaking spaces
+		Matcher matcher = Pattern.compile("<p>(?<ed1>.+?)\\s+(y\\s+(?<ed2>.+?)\\s+)?\\([Ee]ds?\\.\\)").matcher(text);
 		if (matcher.find()) {
-			return matcher.group(1).trim();
+			if (matcher.group("ed1") != null) editors.add(matcher.group("ed1"));
+			if (matcher.group("ed2") != null) editors.add(matcher.group("ed2"));
+			return editors;
 		} else {
 			throw new RuntimeException("Unable to get edition proceedings for " + getTitle());
 		}
+	}
+	
+	@Override
+	public String getDescription() {
+		String description = super.getDescription();
+		description = description.replaceAll("<p>&nbsp;</p>", "").trim();
+		description = Pattern.compile(
+				"<p>\\s*<em>(?:.*?)\\(Eds?\\.\\), Actas de(?:.*?)</em>\\s*</p>", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<p>\\s*<i>(?:.*?)\\(Eds?\\.\\), Actas de(?:.*?)</i>\\s*</p>", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<ul>\\s*<li>(?:<a href=\"https?://biblioteca.sistedes.es\\S+\">.*?</li>)+\\s*</ul>", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<!-- \\[begin:sub_tracks_conferencia\\] -->(?:.*?)<!-- \\[end:sub_tracks_conferencia\\] -->", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<!-- \\[begin:cita-conferencia\\] -->(?:.*?)<!-- \\[end:cita-conferencia\\] -->", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				" A continuación se detalla el contenido de las actas:", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = description.replaceAll("<hr ?/>", "").trim();
+		return description;
 	}
 }

@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.text.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -22,6 +24,7 @@ import es.sistedes.wordpress.migrator.DelayedStreamOpener;
 
 public class Conference extends Library {
 
+	private transient final static Logger logger = LoggerFactory.getLogger(Conference.class);
 	private transient List<Edition> editions;
 
 	public String getAcronym() {
@@ -52,5 +55,15 @@ public class Conference extends Library {
 	
 	public List<Edition> getEditions(Comparator<Edition> comparator) throws IOException {
 		return getEditions().stream().sorted(comparator).collect(Collectors.toList());
+	}
+	
+	@Override
+	public String getDescription() {
+		String description = super.getDescription();
+		description = description.replaceAll("<p>&nbsp;</p>", "").trim();
+		description = Pattern.compile(
+				"<ul>\\s*<li>(?:<a href=\"\\S+\">Actas de las .*?</li>)+\\s*</ul>", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		return description;
 	}
 }

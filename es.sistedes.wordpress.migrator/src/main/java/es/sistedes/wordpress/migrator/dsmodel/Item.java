@@ -24,7 +24,8 @@ public class Item extends DSpaceEntity {
 		PAPER("Artículo"),
 		ABSTRACT("Resumen"),
 		BULLETIN("Boletín"),
-		SEMINAR("Seminario");
+		SEMINAR("Seminario"),
+		PRELIMINARS("Preliminares");
 		
 		
 		private String name;
@@ -48,5 +49,13 @@ public class Item extends DSpaceEntity {
 	
 	public static Item fromHttpEntity(HttpEntity entity) throws ParseException, IOException {
 		return new Gson().fromJson(EntityUtils.toString(entity, StandardCharsets.UTF_8), Item.class);
+	}
+	
+	public void setInArchive(boolean inArchive) {
+		this.inArchive = inArchive;
+	}
+
+	public void setDiscoverable(boolean discoverable) {
+		this.discoverable = discoverable;
 	}
 }

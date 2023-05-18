@@ -33,16 +33,17 @@ public class SeminarPublication extends Publication {
 				seminar.getSummary(),
 				Collections.emptyList(),
 				seminar.getAuthors(),
-				seminar.getHandleUri(), 
+				seminar.getHandle(), 
 				License.CC_BY_NC_ND.getName(),
 				seminar.getDate());
 		publication.setIsPartOf("Seminarios Sistedes");
-		publication.metadata.setSistedesBio(seminar.getBio());
+		publication.metadata.setContributorBio(seminar.getBio());
+		publication.metadata.setPublisher("Sistedes");
 		return publication;
 	}
 	
 	public File[] getFiles() {
-		File directoryFile = getDirectoryFile(getSistedesHandle());
+		File directoryFile = getDirectoryFile(getSistedesIdentifier());
 		return directoryFile.exists() && directoryFile.isDirectory() ?  directoryFile.listFiles() : new File[] {};
 	}
 	

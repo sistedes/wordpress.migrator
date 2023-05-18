@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -16,18 +15,16 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import com.google.gson.Gson;
 
+import es.sistedes.wordpress.migrator.dsmodel.Item.Type;
 import es.sistedes.wordpress.migrator.wpmodel.Track;
 
 public class Collection extends DSpaceEntity {
-
-	private final static List<String> PARTICLES = Arrays.asList(new String[] {
-			"a", "de", "del", "en", "por", "y", "o", "u", "e", "la", "el", "lo", "las",
-			"los", "con", "desde", "hacia", "para", "por", "ya", "and", "on", "of" });
 
 	public static Collection from(Community community, Track track, Date date) {
 		String title = track.getTitle().replaceFirst("Sesi.n\\s+\\d+\\W+", "");
 		title = title.replaceFirst("^\\d+\\.\\W+", "");
 		title = title.replaceFirst("^[A-Z]+:\\W+", "");
+		title = title.replaceFirst("^Track [A-Z]+\\W+", "");
 		Matcher matcher;
 		String suffix;
 		if (!title.contains(" ")) {
@@ -43,14 +40,21 @@ public class Collection extends DSpaceEntity {
 			String[] words = StringUtils.stripAccents(title).replaceAll("[^\\w\\s]", "").split("\\s+");
 			suffix = Arrays.asList(words).stream().filter(w -> !PARTICLES.contains(w)).map(w -> w.toUpperCase().substring(0, 1)).collect(Collectors.joining());
 		}
-		return new Collection(title, null, track.getDescription(), community.getUri() + "/" + suffix, date);
+		String _abstract = "Artículos en la categoría " + title + " publicados en las " + track.getEdition().getProceedingsName() + ".";
+		String description = "Artículos en la categoría <em>" + title + "</em> publicados en las <em>" + track.getEdition().getProceedingsName() + "</em>.";
+		return new Collection(title, _abstract, description, community.getSistedesIdentifier() + "/" + suffix, date);
 	}
 
-	public Collection(String title, String _abstract, String description, String uri, Date date) {
+	public Collection(String title, String _abstract, String description, String sistedesId, Date date, Type entityType) {
+		this(title, _abstract, description, sistedesId, date);
+		this.metadata.setType(entityType.getName());
+	}
+	
+	public Collection(String title, String _abstract, String description, String sistedesId, Date date) {
 		setTitle(title);
 		setAbstract(_abstract);
 		setDescription(description);
-		setUri(uri);
+		setSistedesIdentifier(sistedesId);
 		setDate(date);
 	}
 

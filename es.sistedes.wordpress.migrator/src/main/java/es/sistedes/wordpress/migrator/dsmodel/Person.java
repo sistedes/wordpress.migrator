@@ -30,19 +30,19 @@ public class Person extends Item {
 	}
 	
 	public String getGivenName() {
-		return this.metadata.getGivenName();
+		return this.metadata.getPersonGivenName();
 	}
 	
 	public void setGivenName(String name) {
-		this.metadata.setGivenName(name);
+		this.metadata.setPersonGivenName(name);
 	}
 	
 	public String getFamilyName() {
-		return this.metadata.getFamilyName();
+		return this.metadata.getPersonFamilyName();
 	}
 	
 	public void setFamilyName(String surname) {
-		this.metadata.setFamilyName(surname);
+		this.metadata.setPersonFamilyName(surname);
 	}
 	
 	public String getFullName() {
@@ -50,31 +50,31 @@ public class Person extends Item {
 	}
 	
 	public List<String> getNameVariants() {
-		return this.metadata.getNameVariants();
+		return this.metadata.getPersonNameVariants();
 	}
 	
 	public List<String> getAffiliations() {
-		return this.metadata.getAffiliations();
+		return this.metadata.getPersonAffiliations();
 	}
 	
 	public void setAffiliations(List<String> affiliations) {
-		this.metadata.setAffiliations(affiliations);
+		this.metadata.setPersonAffiliations(affiliations);
 	}
 	
 	public void addAffiliation(String affiliation) {
-		this.metadata.addAffiliation(affiliation);
+		this.metadata.addPersonAffiliation(affiliation);
 	}
 	
 	public List<String> getEmails() {
-		return this.metadata.getEmails();
+		return this.metadata.getPersonEmails();
 	}
 	
 	public void setEmails(List<String> emails) {
-		this.metadata.setEmails(emails.stream().map(e -> StringUtils.toRootLowerCase(e)).collect(Collectors.toList()));
+		this.metadata.setPersonEmails(emails.stream().map(e -> StringUtils.toRootLowerCase(e)).collect(Collectors.toList()));
 	}
 	
 	public void addEmail(String email) {
-		this.metadata.addEmail(StringUtils.toRootLowerCase(email));
+		this.metadata.addPersonEmail(StringUtils.toRootLowerCase(email));
 	}
 	
 	

@@ -22,8 +22,8 @@ public class Metadata {
 	@SerializedName("dc.title")
 	private List<MetadataEntry> titles = new ArrayList<>();
 
-	@SerializedName("dc.identifier.uri")
-	private List<MetadataEntry> uris = new ArrayList<>();
+	@SerializedName("dc.identifier.sistedes")
+	private List<MetadataEntry> sistedesIdentifiers = new ArrayList<>();
 
 	@SerializedName("dc.description")
 	private List<MetadataEntry> descriptions = new ArrayList<>();
@@ -55,6 +55,9 @@ public class Metadata {
 	@SerializedName("dc.date.issued")
 	private List<MetadataEntry> datesIssued = new ArrayList<>();
 	
+	@SerializedName("dc.publisher")
+	private List<MetadataEntry> publishers = new ArrayList<>();
+	
 	@SerializedName("dc.relation.isformatof")
 	private List<MetadataEntry> isFormatOf = new ArrayList<>();
 
@@ -62,52 +65,52 @@ public class Metadata {
 	private List<MetadataEntry> type = new ArrayList<>();
 	
 	@SerializedName("person.givenName")
-	private List<MetadataEntry> givenNames = new ArrayList<>();
+	private List<MetadataEntry> personGivenNames = new ArrayList<>();
 	
 	@SerializedName("person.familyName")
-	private List<MetadataEntry> familyNames = new ArrayList<>();
+	private List<MetadataEntry> personFamilyNames = new ArrayList<>();
 	
 	@SerializedName("person.name.variant")
-	private List<MetadataEntry> nameVariants = new ArrayList<>();
+	private List<MetadataEntry> personNameVariants = new ArrayList<>();
 	
 	@SerializedName("person.affiliation.name")
-	private List<MetadataEntry> affiliations = new ArrayList<>();
+	private List<MetadataEntry> personAffiliations = new ArrayList<>();
 
 	@SerializedName("person.email")
-	private List<MetadataEntry> emails = new ArrayList<>();
+	private List<MetadataEntry> personEmails = new ArrayList<>();
 	
-	@SerializedName("bds.contributor.author")
-	private List<MetadataEntry> bdsAuthors = new ArrayList<>();
+	@SerializedName("dc.contributor.signature")
+	private List<MetadataEntry> contributorsSignatures = new ArrayList<>();
 	
-	@SerializedName("bds.contributor.email")
-	private List<MetadataEntry> bdsEmails = new ArrayList<>();
+	@SerializedName("dc.contributor.email")
+	private List<MetadataEntry> contributorsEmails = new ArrayList<>();
 	
-	@SerializedName("bds.contributor.affiliation")
-	private List<MetadataEntry> bdsAffiliations = new ArrayList<>();
+	@SerializedName("dc.contributor.affiliation")
+	private List<MetadataEntry> contributorsAffiliations = new ArrayList<>();
 
-	@SerializedName("bds.contributor.bio")
-	private List<MetadataEntry> bdsBio = new ArrayList<>();
+	@SerializedName("dc.contributor.bio")
+	private List<MetadataEntry> contributorsBios = new ArrayList<>();
 	
-	@SerializedName("bds.conference.name")
-	private List<MetadataEntry> bdsConferenceNames = new ArrayList<>();
+	@SerializedName("bs.conference.name")
+	private List<MetadataEntry> bsConferenceNames = new ArrayList<>();
 
-	@SerializedName("bds.edition.name")
-	private List<MetadataEntry> bdsEditionNames = new ArrayList<>();
+	@SerializedName("bs.conference.acronym")
+	private List<MetadataEntry> bsConferenceAcronyms = new ArrayList<>();
+	
+	@SerializedName("bs.edition.name")
+	private List<MetadataEntry> bsEditionNames = new ArrayList<>();
 
-	@SerializedName("bds.edition.year")
-	private List<MetadataEntry> bdsEditionYears = new ArrayList<>();
+	@SerializedName("bs.edition.date")
+	private List<MetadataEntry> bsEditionDates = new ArrayList<>();
 
-	@SerializedName("bds.edition.date")
-	private List<MetadataEntry> bdsEditionDates = new ArrayList<>();
+	@SerializedName("bs.edition.location")
+	private List<MetadataEntry> bsEditionLocations = new ArrayList<>();
 
-	@SerializedName("bds.edition.location")
-	private List<MetadataEntry> bdsEditionLocations = new ArrayList<>();
+	@SerializedName("bs.proceedings.editor")
+	private List<MetadataEntry> bsProceedingsEditors = new ArrayList<>();
 
-	@SerializedName("bds.proceedings.editors")
-	private List<MetadataEntry> bdsProceedingsEditors = new ArrayList<>();
-
-	@SerializedName("bds.proceedings.name")
-	private List<MetadataEntry> bdsProceedingsNames = new ArrayList<>();
+	@SerializedName("bs.proceedings.name")
+	private List<MetadataEntry> bsProceedingsNames = new ArrayList<>();
 	// END: JSON fields
 	
 	
@@ -121,14 +124,14 @@ public class Metadata {
 		this.titles.add(new MetadataEntry(title));
 	}
 
-	public String getUri() {
-		return uris.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	public String getSistedesIdentifier() {
+		return sistedesIdentifiers.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 
-	public void setUri(String uri) {
-		if (StringUtils.isBlank(uri)) return;
-		this.uris.clear();
-		this.uris.add(new MetadataEntry(uri));
+	public void setSistedesIdentifier(String id) {
+		if (StringUtils.isBlank(id)) return;
+		this.sistedesIdentifiers.clear();
+		this.sistedesIdentifiers.add(new MetadataEntry(id));
 	}
 
 	public String getDescription() {
@@ -203,6 +206,16 @@ public class Metadata {
 		this.licenses.add(new MetadataEntry(license));
 	}
 	
+	public String getPublisher() {
+		return publishers.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	}
+	
+	public void setPublisher(String publisher) {
+		if (StringUtils.isBlank(publisher)) return;
+		this.publishers.clear();
+		this.publishers.add(new MetadataEntry(publisher));
+	}
+	
 	public String getRightsUri() {
 		return rightsUris.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
@@ -219,6 +232,7 @@ public class Metadata {
 		}).orElse(null);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void setDate(Date date) {
 		if (date == null) return;
 		this.datesAvailable.clear();
@@ -251,185 +265,187 @@ public class Metadata {
 		this.type.add(new MetadataEntry(type));
 	}
 
-	public String getGivenName() {
-		return givenNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	public String getPersonGivenName() {
+		return personGivenNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
-	public void setGivenName(String givenName) {
+	public void setPersonGivenName(String givenName) {
 		if (StringUtils.isBlank(givenName)) return;
-		this.givenNames.clear();
-		this.givenNames.add(new MetadataEntry(givenName));
+		this.personGivenNames.clear();
+		this.personGivenNames.add(new MetadataEntry(givenName));
 	}
 	
-	public String getFamilyName() {
-		return familyNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	public String getPersonFamilyName() {
+		return personFamilyNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
-	public void setFamilyName(String familyName) {
+	public void setPersonFamilyName(String familyName) {
 		if (StringUtils.isBlank(familyName)) return;
-		this.familyNames.clear();
-		this.familyNames.add(new MetadataEntry(familyName));
+		this.personFamilyNames.clear();
+		this.personFamilyNames.add(new MetadataEntry(familyName));
 	}
 	
-	public List<String> getNameVariants() {
-		return nameVariants.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getPersonNameVariants() {
+		return personNameVariants.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void setNameVariants(List<String> nameVariants) {
+	public void setPersonNameVariants(List<String> nameVariants) {
 		if (nameVariants == null) return;
-		this.nameVariants.clear();
+		this.personNameVariants.clear();
 		for (int i = 0; i < nameVariants.size(); i++) {
-			this.nameVariants.add(new MetadataEntry(nameVariants.get(i), i + 1));
+			this.personNameVariants.add(new MetadataEntry(nameVariants.get(i), i + 1));
 		}
 	}
 
-	public List<String> getAffiliations() {
-		return affiliations.stream().map(a ->  a.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getPersonAffiliations() {
+		return personAffiliations.stream().map(a ->  a.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void addAffiliation(String affiliation) {
+	public void addPersonAffiliation(String affiliation) {
 		if (StringUtils.isBlank(affiliation)) return;
-		this.affiliations.add(new MetadataEntry(affiliation));
+		this.personAffiliations.add(new MetadataEntry(affiliation));
 	}
 	
-	public void setAffiliations(List<String> affiliations) {
-		if (this.affiliations == null) return;
-		this.affiliations.clear();
+	public void setPersonAffiliations(List<String> affiliations) {
+		if (this.personAffiliations == null) return;
+		this.personAffiliations.clear();
 		for (int i = 0; i < affiliations.size(); i++) {
-			this.affiliations.add(new MetadataEntry(affiliations.get(i), i + 1));
+			this.personAffiliations.add(new MetadataEntry(affiliations.get(i), i + 1));
 		}
 	}
 	
-	public List<String> getEmails() {
-		return emails.stream().map(e ->  e.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getPersonEmails() {
+		return personEmails.stream().map(e ->  e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void addEmail(String email) {
+	public void addPersonEmail(String email) {
 		if (StringUtils.isBlank(email)) return;
-		this.emails.add(new MetadataEntry(email));
+		this.personEmails.add(new MetadataEntry(email));
 	}
 	
-	public void setEmails(List<String> emails) {
-		if (this.emails == null) return;
-		this.emails.clear();
+	public void setPersonEmails(List<String> emails) {
+		if (this.personEmails == null) return;
+		this.personEmails.clear();
 		for (int i = 0; i < emails.size(); i++) {
-			this.emails.add(new MetadataEntry(emails.get(i), i + 1));
+			this.personEmails.add(new MetadataEntry(emails.get(i), i + 1));
 		}
 	}
 	
-	public List<String> getSistedesAuthors() {
-		return bdsAuthors.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getContributorsSignatures() {
+		return contributorsSignatures.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void setSistedesAuthors(List<String> authors) {
+	public void setContributorsSignatures(List<String> authors) {
 		if (authors == null) return;
-		this.bdsAuthors.clear();
+		this.contributorsSignatures.clear();
 		for (int i = 0; i < authors.size(); i++) {
-			this.bdsAuthors.add(new MetadataEntry(authors.get(i), i + 1));
+			this.contributorsSignatures.add(new MetadataEntry(authors.get(i), i + 1));
 		}
 	}
 	
-	public List<String> getSistedesEmails() {
-		return bdsEmails.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getContributorsEmails() {
+		return contributorsEmails.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void setSistedesEmails(List<String> emails) {
+	public void setContributorsEmails(List<String> emails) {
 		if (emails == null) return;
-		this.bdsEmails.clear();
+		this.contributorsEmails.clear();
 		for (int i = 0; i < emails.size(); i++) {
-			this.bdsEmails.add(new MetadataEntry(emails.get(i), i + 1));
+			this.contributorsEmails.add(new MetadataEntry(emails.get(i), i + 1));
 		}
 	}
 	
-	public List<String> getSistedesAffiliations() {
-		return bdsAffiliations.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
+	public List<String> getContributorsAffiliations() {
+		return contributorsAffiliations.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void setSistedesAffiliations(List<String> affiliations) {
+	public void setContributorsAffiliations(List<String> affiliations) {
 		if (affiliations == null) return;
-		this.bdsAffiliations.clear();
+		this.contributorsAffiliations.clear();
 		for (int i = 0; i < affiliations.size(); i++) {
-			this.bdsAffiliations.add(new MetadataEntry(affiliations.get(i), i + 1));
+			this.contributorsAffiliations.add(new MetadataEntry(affiliations.get(i), i + 1));
 		}
 	}
 	
-	public String getSistedesBio() {
-		return bdsBio.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	public String getContributorBio() {
+		return contributorsBios.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
-	public void setSistedesBio(String bio) {
+	public void setContributorBio(String bio) {
 		if (StringUtils.isBlank(bio)) return;
-		this.bdsBio.clear();
-		this.bdsBio.add(new MetadataEntry(bio));
+		this.contributorsBios.clear();
+		this.contributorsBios.add(new MetadataEntry(bio));
 	}
 	
 	public String getSistedesConferenceName() {
-		return bdsConferenceNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return bsConferenceNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public void setSistedesConferenceName(String conferenceName) {
 		if (StringUtils.isBlank(conferenceName)) return;
-		this.bdsConferenceNames.clear();
-		this.bdsConferenceNames.add(new MetadataEntry(conferenceName));
+		this.bsConferenceNames.clear();
+		this.bsConferenceNames.add(new MetadataEntry(conferenceName));
+	}
+	
+	public String getSistedesConferenceAcronym() {
+		return bsConferenceAcronyms.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	}
+	
+	public void setSistedesConferenceAcronym(String conferenceAcronym) {
+		if (StringUtils.isBlank(conferenceAcronym)) return;
+		this.bsConferenceAcronyms.clear();
+		this.bsConferenceAcronyms.add(new MetadataEntry(conferenceAcronym));
 	}
 	
 	public String getSistedesEditionName() {
-		return bdsEditionNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return bsEditionNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public void setSistedesEditionName(String editionName) {
 		if (StringUtils.isBlank(editionName)) return;
-		this.bdsEditionNames.clear();
-		this.bdsEditionNames.add(new MetadataEntry(editionName));
+		this.bsEditionNames.clear();
+		this.bsEditionNames.add(new MetadataEntry(editionName));
 	}
-	
-	public String getSistedesEditionYear() {
-		return bdsEditionYears.stream().findFirst().map(e ->  e.getValue()).orElse(null);
-	}
-	
-	public void setSistedesEditionYear(String editionYear) {
-		if (StringUtils.isBlank(editionYear)) return;
-		this.bdsEditionYears.clear();
-		this.bdsEditionYears.add(new MetadataEntry(editionYear));
-	}
-	
+
 	public String getSistedesEditionDate() {
-		return bdsEditionDates.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return bsEditionDates.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public void setSistedesEditionDate(String editionDate) {
 		if (StringUtils.isBlank(editionDate)) return;
-		this.bdsEditionDates.clear();
-		this.bdsEditionDates.add(new MetadataEntry(editionDate));
+		this.bsEditionDates.clear();
+		this.bsEditionDates.add(new MetadataEntry(editionDate));
 	}
 	
 	public String getSistedesEditionLocation() {
-		return bdsEditionLocations.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return bsEditionLocations.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public void setSistedesEditionLocation(String editionLocation) {
 		if (StringUtils.isBlank(editionLocation)) return;
-		this.bdsEditionLocations.clear();
-		this.bdsEditionLocations.add(new MetadataEntry(editionLocation));
+		this.bsEditionLocations.clear();
+		this.bsEditionLocations.add(new MetadataEntry(editionLocation));
 	}
 	
-	public String getSistedesProceedingsEditor() {
-		return bdsProceedingsEditors.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	public List<String> getSistedesProceedingsEditor() {
+		return bsProceedingsEditors.stream().map(e -> e.getValue()).collect(Collectors.toUnmodifiableList());
 	}
 	
-	public void setSistedesProceedingsEditor(String ProceedingsEditor) {
-		if (StringUtils.isBlank(ProceedingsEditor)) return;
-		this.bdsProceedingsEditors.clear();
-		this.bdsProceedingsEditors.add(new MetadataEntry(ProceedingsEditor));
+	public void setSistedesProceedingsEditor(List<String> proceedingsEditors) {
+		if (proceedingsEditors == null) return;
+		this.bsProceedingsEditors.clear();
+		for (int i = 0; i < proceedingsEditors.size(); i++) {
+			this.bsProceedingsEditors.add(new MetadataEntry(proceedingsEditors.get(i), i + 1));
+		}
 	}
 	
 	public String getSistedesProceedingsName() {
-		return bdsProceedingsNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+		return bsProceedingsNames.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}
 	
 	public void setSistedesProceedingsName(String ProceedingsName) {
 		if (StringUtils.isBlank(ProceedingsName)) return;
-		this.bdsProceedingsNames.clear();
-		this.bdsProceedingsNames.add(new MetadataEntry(ProceedingsName));
+		this.bsProceedingsNames.clear();
+		this.bsProceedingsNames.add(new MetadataEntry(ProceedingsName));
 	}
 }

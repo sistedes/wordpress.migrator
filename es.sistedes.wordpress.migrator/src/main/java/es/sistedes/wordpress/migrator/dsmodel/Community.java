@@ -18,7 +18,8 @@ public class Community extends DSpaceEntity {
 	private static final String BIBTEX_TAG = "<p>Ver la referencia en formato <a href=\"#\"  class=\"citaBibtex\">Bibtex</a></p>";
 	
 	public static Community from(Site site, DocumentsLibrary library) {
-		return new Community(library.getLibraryName(), library.getDescription(), library.getDescription(), site.getBaseUri() + "/SISTEDES");
+		return new Community(library.getLibraryName(), library.getDescription(), library.getDescription(),
+				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/SISTEDES");
 	}
 	
 	public static Community from(Site site, Conference conference) {
@@ -30,7 +31,8 @@ public class Community extends DSpaceEntity {
 		} catch (IndexOutOfBoundsException e) {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
-		return new Community(conference.getTitle(), description, _abstract, site.getBaseUri() + "/" + conference.getAcronym());
+		return new Community(conference.getTitle(), description, _abstract,
+				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/" + conference.getAcronym());
 	}
 	
 	public static Community from(Community community, Edition edition) {
@@ -47,14 +49,14 @@ public class Community extends DSpaceEntity {
 		} catch (IndexOutOfBoundsException e) {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
-		return new Community(edition.getTitle(), description, _abstract, community.getUri() + "/" + String.valueOf(edition.getYear()));
+		return new Community(edition.getTitle(), description, _abstract, community.getSistedesIdentifier() + "/" + String.valueOf(edition.getYear()));
 	}
 	
-	private Community(String title, String description, String _abstract, String uri) {
+	private Community(String title, String description, String _abstract, String sistedesId) {
 		setTitle(title); 
 		setDescription(description);
 		setAbstract(_abstract);
-		setUri(uri);
+		setSistedesIdentifier(sistedesId);
 	}
 	
 	public static Community fromHttpEntity(HttpEntity entity) throws ParseException, IOException {

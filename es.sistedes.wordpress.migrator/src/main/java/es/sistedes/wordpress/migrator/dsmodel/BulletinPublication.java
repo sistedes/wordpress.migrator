@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import es.sistedes.wordpress.migrator.wpmodel.Author;
 import es.sistedes.wordpress.migrator.wpmodel.Bulletin;
 import es.sistedes.wordpress.migrator.wpmodel.Document.License;
-import es.sistedes.wordpress.migrator.wpmodel.Seminar;
 
 public class BulletinPublication extends Publication {
 
@@ -41,33 +40,16 @@ public class BulletinPublication extends Publication {
 				bulletin.getDescription(),
 				Collections.emptyList(),
 				Collections.emptyList(),
-				bulletin.getHandleUri(), 
+				bulletin.getHandle(), 
 				License.CC_BY_NC_ND.getName(),
 				bulletin.getDate());
 		publication.setIsPartOf("Boletines Sistedes");
-		return publication;
-	}
-	
-	public static BulletinPublication from(Collection collection, Seminar seminar) {
-		File file = getDirectoryFile(seminar.getHandle());
-		if (!file.exists()) {
-			LOGGER.error("Resources folder for seminar "  + seminar.getTitle() + " does not exist");
-		}
-		BulletinPublication publication = new BulletinPublication(
-				seminar.getTitle(),
-				seminar.getSummary(),
-				Collections.emptyList(),
-				seminar.getAuthors(),
-				seminar.getHandleUri(), 
-				License.CC_BY_NC_ND.getName(),
-				seminar.getDate());
-		publication.setIsPartOf("Seminarios Sistedes");
-		publication.metadata.setSistedesBio(seminar.getBio());
+		publication.metadata.setPublisher("Sistedes");
 		return publication;
 	}
 	
 	public File[] getFiles() {
-		File directoryFile = getDirectoryFile(getSistedesHandle());
+		File directoryFile = getDirectoryFile(getSistedesIdentifier());
 		return directoryFile.exists() && directoryFile.isDirectory() ?  directoryFile.listFiles() : new File[] {};
 	}
 	

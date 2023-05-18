@@ -63,6 +63,8 @@ public class Seminar {
 			if (matcher.find()) {
 				this.authors = extractAuthors(matcher.group(1).trim());
 				this.bio = matcher.group(2).trim().replaceAll("\r\n", "").replaceAll("\\s*</p>\\s*", "</p>").replaceAll("\\s*(<br/?>)+\\s*", "</p>\n<p>");
+				this.bio = bio.replaceAll("<p>\\(información no disponible\\)</p>", "");
+				this.bio = bio.replaceAll("<(\\S+)>\\s*</\\1>", "");
 				String textDate = matcher.group(3).trim();
 				String format = "dd 'de' MMMM 'de' yyyy";
 				if (textDate.endsWith(" h.")) {

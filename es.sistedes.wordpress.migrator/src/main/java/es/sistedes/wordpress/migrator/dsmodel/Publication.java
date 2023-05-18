@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -39,14 +38,13 @@ public class Publication extends Item {
 
 	private transient List<Author> authors = new ArrayList<>();
 	
-	public Publication(String title, String _abstract, List<String> keywords, List<Author> authors, String uri, String licenseName, Date date) {
+	public Publication(String title, String _abstract, List<String> keywords, List<Author> authors, String sistedesId, String licenseName, Date date) {
 			setTitle(title);
 			setAbstract(_abstract);
-			setUri(uri);
+			setSistedesIdentifier(sistedesId);
 			setDate(date);
-			setType(isAbstract() ? Type.ABSTRACT.getName() : Type.PAPER.getName());
 			setKeywords(keywords);
-			setLicense(License.from(licenseName), uri);
+			setLicense(License.from(licenseName), sistedesId);
 			setAuthors(authors);
 		}
 
@@ -64,18 +62,20 @@ public class Publication extends Item {
 				article.getAbstract(),
 				article.getKeywords(),
 				article.getAuthors(),
-				article.getHandleUri(),
+				article.getHandle(),
 				article.getLicense(),
 				collection.getDate());
+		publication.setType(publication.isAbstract() ? Type.ABSTRACT.getName() : Type.PAPER.getName());
 		publication.setIsPartOf(article.getTrack().getEdition().getProceedingsName());
 		publication.metadata.setSistedesConferenceName(article.getTrack().getEdition().getConference().getTitle());
+		publication.metadata.setSistedesConferenceAcronym(article.getTrack().getEdition().getConference().getAcronym());
 		publication.metadata.setSistedesEditionName(article.getTrack().getEdition().getName());
-		publication.metadata.setSistedesEditionYear(String.valueOf(article.getTrack().getEdition().getYear()));
-		publication.metadata.setSistedesEditionDate(new SimpleDateFormat("MMMM 'de' yyyy", Locale.forLanguageTag("es")).format(
+		publication.metadata.setSistedesEditionDate(new SimpleDateFormat("yyyy-MM-dd").format(
 				article.getTrack().getEdition().getDate()));
 		publication.metadata.setSistedesEditionLocation(article.getTrack().getEdition().getLocation());
 		publication.metadata.setSistedesProceedingsName(article.getTrack().getEdition().getProceedingsName());
 		publication.metadata.setSistedesProceedingsEditor(article.getTrack().getEdition().getEditors());
+		publication.metadata.setPublisher("Sistedes");
 		return publication;
 	}
 
@@ -133,22 +133,34 @@ public class Publication extends Item {
 		this.metadata.setDate(date);
 	}
 	
+	
+	public String getPublisher() {
+		return this.metadata.getPublisher();
+	}
+	
+	public void setPublisher(String publisher) {
+		this.metadata.setPublisher(publisher);
+	}
+	
+	
+	
 	public File getFile() {
-		return getPdfFile(getSistedesHandle());
+		return getPdfFile(getSistedesIdentifier());
 	}
 
 	public boolean isAbstract() {
-		return Paths.get(PDF_CACHE_DIR + ABSTRACTS_DIR, RegExUtils.replaceAll(getSistedesHandle(), "/", "-") + ".pdf").toFile().exists();
+		return Paths.get(PDF_CACHE_DIR + ABSTRACTS_DIR, RegExUtils.replaceAll(getSistedesIdentifier(), "/", "-") + ".pdf").toFile().exists();
 	}
 	
 	public void setAuthors(List<Author> authors) {
+		if (authors == null) return;
 		this.authors = new ArrayList<>(authors);
-		this.metadata.setSistedesAuthors(authors.stream().map(a -> a.getFirstName() + " " + a.getLastName()).collect(Collectors.toList()));
+		this.metadata.setContributorsSignatures(authors.stream().map(a -> a.getLastName() + ", " + a.getFirstName()).collect(Collectors.toList()));
 		if (authors.stream().anyMatch(a -> StringUtils.isNotBlank(a.getEmail()))) {
-			this.metadata.setSistedesEmails(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getEmail(), "")).collect(Collectors.toList()));
+			this.metadata.setContributorsEmails(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getEmail(), "")).collect(Collectors.toList()));
 		}
 		if (authors.stream().anyMatch(a -> StringUtils.isNotBlank(a.getAffiliation()))) {
-			this.metadata.setSistedesAffiliations(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getAffiliation(), "")).collect(Collectors.toList()));
+			this.metadata.setContributorsAffiliations(authors.stream().map(a -> StringUtils.defaultIfBlank(a.getAffiliation(), "")).collect(Collectors.toList()));
 		}
 	}
 	
@@ -160,6 +172,7 @@ public class Publication extends Item {
 		switch (license) {
 			case CC_BY:
 			case CC_BY_NC_ND:
+			case CC_BY_NC_SA:
 				setLicense(license.getName());
 				setRightsUri(license.getUrl());
 				break;
@@ -171,6 +184,7 @@ public class Publication extends Item {
 			case RESTRICTED:
 				setLicense("All rights reserved to their respective owners");
 				LOGGER.warn(MessageFormat.format("Restricted license for paper at ''{1}''", license, uri));
+				break;
 			default:
 				LOGGER.warn(MessageFormat.format("Unexpected license type (''{0}'') for paper at ''{1}''", license, uri));
 		}
