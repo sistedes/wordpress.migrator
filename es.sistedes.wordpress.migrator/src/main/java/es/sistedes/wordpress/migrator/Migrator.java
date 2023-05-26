@@ -1191,10 +1191,15 @@ public class Migrator {
 				obj2.addProperty("value", author.getLastName());
 				objs.add(obj2);
 				JsonObject obj3 = new JsonObject();
-				obj3.addProperty("op", "add");
-				obj3.addProperty("path", "/metadata/person.name.variant");
-				obj3.addProperty("value", personInDSpace.getFamilyName() + ", " + personInDSpace.getGivenName());
+				obj3.addProperty("op", "replace");
+				obj3.addProperty("path", "/metadata/dc.title");
+				obj3.addProperty("value", author.getLastName() + ", " + author.getFirstName());
 				objs.add(obj3);
+				JsonObject obj4 = new JsonObject();
+				obj4.addProperty("op", "add");
+				obj4.addProperty("path", "/metadata/person.name.variant");
+				obj4.addProperty("value", personInDSpace.getFamilyName() + ", " + personInDSpace.getGivenName());
+				objs.add(obj4);
 				logger.info(MessageFormat.format(
 						"[!PERSON UPDATE] Setting new visible name ''{0}'' (and marking ''{1}'' as a variant)",
 						author.getFullName(), personInDSpace.getFullName()));
@@ -1446,6 +1451,8 @@ public class Migrator {
 	
 	private static void setHandle(String newHandle, String targetUrl, String prefix, PublicKeyAuthenticationInfo auth) throws HandleException, MigrationException  {
 		logger.info("[>HDL] Handle created: '" + newHandle + "' -> '" + targetUrl + "'");
+
+		if (true) return;
 		
 		HandleResolver resolver = new HandleResolver();
         
