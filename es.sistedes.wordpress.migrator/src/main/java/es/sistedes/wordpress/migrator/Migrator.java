@@ -121,6 +121,7 @@ public class Migrator {
 	private static final String SITES_ENDPOINT = API_ENDPOINT + "/core/sites";
 	private static final String TOP_COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities/search/top";
 	private static final String COMMUNITIES_ENDPOINT = API_ENDPOINT + "/core/communities";
+	private static final String COMMUNITIES_COLLECTIONS_ENDPOINT = API_ENDPOINT + "/core/communities/%s/collections";
 	private static final String COLLECTIONS_ENDPOINT = API_ENDPOINT + "/core/collections";
 	private static final String COLLECTIONS_ITEMT_TEMPLATE_ENDPOINT = API_ENDPOINT + "/core/collections/%s/itemtemplate";
 	private static final String ITEMS_ENDPOINT = API_ENDPOINT + "/core/items";
@@ -148,6 +149,14 @@ public class Migrator {
 	private class CommunitiesResponse {
 		private class Embedded {
 			private List<Community> communities;
+		}
+		
+		private Embedded _embedded;
+	}
+
+	private class CollectionsResponse {
+		private class Embedded {
+			private List<Collection> collections;
 		}
 		
 		private Embedded _embedded;
@@ -334,7 +343,9 @@ public class Migrator {
 				sistedesCommunity = createSistedesCommunity(bdSistedes);
 			}
 			
-			Collection authorsCollection = createCollection(sistedesCommunity, 
+			Collection authorsCollection = findAuthorsCollection(sistedesCommunity);
+			if (authorsCollection == null) {
+				authorsCollection = createCollection(sistedesCommunity, 
 					new Collection(
 							"Autores",
 							"Todos los autores que han contribuido a las jornadas Sistedes", 
@@ -342,6 +353,7 @@ public class Migrator {
 							sistedesCommunity.getSistedesIdentifier() + "/AUTHORS",
 							null,
 							Type.AUTHOR));
+			}
 
 			if (isMigrateDocumentsEnabled()) {
 				migrateSeminars(bdSistedes, authorsCollection);
@@ -446,7 +458,7 @@ public class Migrator {
 		logger.info("[<Seminar] Migration of Sistedes Seminars finished");
 	}
 	
-	private Community createConferenceCommunity(final Site site, final Conference conference) throws MigrationException, IOException, ParseException {
+	private Community createConferenceCommunity(final Site site, final Conference conference) throws Exception {
 		Community community = Community.from(site, conference);
 		if (!isDryRun()) {
 			Community found = findTopCommunity(community);
@@ -458,7 +470,7 @@ public class Migrator {
 		return community;
 	}
 
-	private Community findSistedesCommunity(final BDSistedes bdSistedes) throws MigrationException, IOException, ParseException {
+	private Community findSistedesCommunity(final BDSistedes bdSistedes) throws Exception {
 		Community community = Community.from(getSite(), bdSistedes.getDocumentsLibrary());
 		Community found = findTopCommunity(community);
 		if (found != null) {
@@ -466,6 +478,40 @@ public class Migrator {
 		}
 		return null;
 	}
+	
+	private Collection findAuthorsCollection(final Community community) throws Exception {
+		try (CloseableHttpClient client = httpClientBuilder.build()) {
+			{
+				HttpGet get = new HttpGet(output + String.format(COMMUNITIES_COLLECTIONS_ENDPOINT, community.getUuid()));
+				get.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
+				get.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
+				
+				try (CloseableHttpResponse response = client.execute(get)) {
+					if (response.getCode() != HttpStatus.SC_OK) {
+						throw new MigrationException(
+								MessageFormat.format("Unable to obtain Collections from ''{0}''. HTTP request returned code {1}: {2}",
+								output, response.getCode(), community.toJson()));
+					}
+					if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+						dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
+					}
+					String string = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+					CollectionsResponse collectionsResponse = new Gson().fromJson(string, CollectionsResponse.class);
+					if (collectionsResponse._embedded != null) {
+						List<Collection> collections = collectionsResponse._embedded.collections;
+						String title = "Autores";
+						Optional<Collection> result = collections.stream().filter(c -> StringUtils.equals(c.getTitle(), title)).findFirst();
+						if (result.isPresent()) {
+							return result.get();
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
+	
 	
 	private Community createSistedesCommunity(final BDSistedes bdSistedes) throws MigrationException, IOException, ParseException {
 		Community community = Community.from(getSite(), bdSistedes.getDocumentsLibrary());
@@ -475,7 +521,7 @@ public class Migrator {
 		return community;
 	}
 
-	private Community findTopCommunity(final Community community) throws MigrationException {
+	private Community findTopCommunity(final Community community) throws Exception {
 		try (CloseableHttpClient client = httpClientBuilder.build()) {
 			// Check first if there's already a top level community...
 			{
@@ -504,8 +550,6 @@ public class Migrator {
 					}
 				}
 			}
-		} catch (Exception e) {
-			throw new MigrationException(e);
 		}
 		return null;
 	}
