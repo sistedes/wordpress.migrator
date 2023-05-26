@@ -376,7 +376,7 @@ public class Migrator {
 						if (edition.getTracks().isEmpty()) {
 							logger.warn("[!EDITION] '" + edition.getTitle() + "' has no tracks! Creating a dummy one...");
 							logger.info("[>TRACK] Starting migration of " + edition.getTitle() + " (" + edition.getArticles().size() + " papers)");
-							Collection publicationsCollection = createCollection(childCommunity, edition, edition.getDate());
+							Collection publicationsCollection = createCollection(childCommunity, edition);
 							for (Article article : edition.getArticles()) {
 								logger.debug("[-PAPER] Migrating '" + article.getTitle() + "'. "
 										+ article.getAuthors().stream().map(Author::toString).collect(Collectors.joining("; ")));
@@ -546,6 +546,17 @@ public class Migrator {
 			throw new MigrationException(e);
 		}
 		return result;
+	}
+	
+	private Collection createCollection(final Community parent, final Edition edition) throws MigrationException, IOException, ParseException, URISyntaxException {
+		String name = "Artículos";
+		String _abstract = "Artículos publicados en las " + edition.getProceedingsName() + ".";
+		String description = _abstract;
+		Collection collection = new Collection(name, _abstract, description, parent.getSistedesIdentifier() + "/" + edition.getYear(), edition.getDate());
+		if (!isDryRun()) {
+			collection = createCollection(parent, collection);
+		}
+		return collection;
 	}
 
 	private Collection createCollection(final Community parent, final Track track, final Date date) throws MigrationException, IOException, ParseException, URISyntaxException {

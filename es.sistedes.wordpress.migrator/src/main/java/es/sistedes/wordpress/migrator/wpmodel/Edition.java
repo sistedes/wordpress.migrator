@@ -83,6 +83,16 @@ public class Edition extends Track {
 	}
 	
 	@Override
+	public Edition getEdition() {
+		return this;
+	}
+	
+	@Override
+	public void setEdition(Edition edition) {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
 	public List<Article> getArticles() throws IOException {
 		List<Article> articles = new ArrayList<>(super.getArticles());
 		for (Track track : getTracks()) {
@@ -145,6 +155,9 @@ public class Edition extends Track {
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
 				" A continuación se detalla el contenido de las actas:", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<ol\\s+id=\"articulo_a_conferencia_list\">(?:.*?)</ol>", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = description.replaceAll("<hr ?/>", "").trim();
 		return description;
