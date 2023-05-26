@@ -56,6 +56,9 @@ public class Metadata {
 	@SerializedName("dc.rights.uri")
 	private List<MetadataEntry> rightsUris = new ArrayList<>();
 	
+	@SerializedName("dc.date.accessioned")
+	private List<MetadataEntry> datesAccessioned = new ArrayList<>();
+	
 	@SerializedName("dc.date.available")
 	private List<MetadataEntry> datesAvailable = new ArrayList<>();
 	
@@ -247,7 +250,9 @@ public class Metadata {
 		if (date == null) return;
 		this.datesAvailable.clear();
 		this.datesIssued.clear();
+		this.datesAccessioned.clear();
 		this.datesAvailable.add(new MetadataEntry(DATE_FORMAT.format(date)));
+		this.datesAccessioned.add(new MetadataEntry(DATE_FORMAT.format(date)));
 		if (date.getHours() == 0 && date.getMinutes() == 0) {
 			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
 		} else {
