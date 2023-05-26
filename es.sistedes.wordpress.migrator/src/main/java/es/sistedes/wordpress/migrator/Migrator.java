@@ -1463,8 +1463,6 @@ public class Migrator {
 	private static void setHandle(String newHandle, String targetUrl, String prefix, PublicKeyAuthenticationInfo auth) throws HandleException, MigrationException  {
 		logger.info("[>HDL] Handle created: '" + newHandle + "' -> '" + targetUrl + "'");
 
-		if (true) return;
-		
 		HandleResolver resolver = new HandleResolver();
         
         int timestamp = (int) (System.currentTimeMillis() / 1000);
