@@ -613,8 +613,8 @@ public class Migrator {
 	
 	private Collection createPreliminariesCollection(final Community parent) throws Exception {
 		String name = "Preliminares";
-		String _abstract = "Preliminares de las Actas de las " + parent.getName() + "."
-				+ " Los preliminares de las actas incluyen información adicional sobre las jornadas,"
+		String _abstract = "Preliminares de las Actas de las " + parent.getName() + ". "
+				+ "Los preliminares de las actas incluyen información adicional sobre las jornadas, "
 				+ "tales como la presentación de las jornadas, los comités participantes, "
 				+ "las conferencias invitadas, o los agradecimientos, entre otras secciones.";
 		String description = _abstract;
@@ -627,14 +627,14 @@ public class Migrator {
 	
 	private Collection createBulletinsCollection(final Community parent) throws Exception {
 		String name = "Boletines de prensa";
-		String _abstract = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral"
-				+ " que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que"
-				+ " pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
+		String _abstract = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral "
+				+ "que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que "
+				+ "pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
 				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interés que vayan a suceder "
 				+ "próximamente";
-		String description = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral"
-				+ " que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que"
-				+ " pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
+		String description = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral "
+				+ "que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que "
+				+ "pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
 				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interés que vayan a suceder "
 				+ "próximamente (congresos organizados por los socios, cursos, seminarios, tesis leídas, premios, etc.). "
 				+ "Los Corresponsales de Sistedes colaboran con la directiva de la asociación proporcionando el "
