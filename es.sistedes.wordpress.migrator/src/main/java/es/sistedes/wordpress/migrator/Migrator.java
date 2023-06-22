@@ -936,28 +936,28 @@ public class Migrator {
 								String name1 = author.getFullName();
 								String name2 = found.get(i).getFullName();
 								Integer distance = new LevenshteinDistance().apply(name1, name2);
-								float normalizedDistance = (float) distance / (float) Math.max(author.getFullName().length(), name2.length());
+								float normalizedDistance = (float) distance / (float) Math.max(name1.length(), name2.length());
 								if (normalizedDistance == 0) {
 									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance <= 0.1) {
-									messageTemplate = "[!PERSON] Almost exact (0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+								} else if (normalizedDistance < 0.1) {
+									messageTemplate = "[!PERSON] Almost exact (< 0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance <= 0.3) {
-									messageTemplate = "[!PERSON] Approximate match (0.25) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+								} else if (normalizedDistance < 0.3) {
+									messageTemplate = "[!PERSON] Approximate match (< 0.3) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance <= 0.5) {
-									messageTemplate = "[!PERSON] Approximate match (0.5) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+								} else if (normalizedDistance < 0.7) {
+									messageTemplate = "[!PERSON] Approximate match (< 0.7) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance <= 0.8) {
-									messageTemplate = "[!PERSON] Approximate match (0.75) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									continue;
 								} else {
-									Toolkit.getDefaultToolkit().beep();
+									messageTemplate = "[!PERSON] Approximate match (>= 0.7) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
+											result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+									result = null;
 									continue;
 								}
 							}
@@ -1216,11 +1216,11 @@ public class Migrator {
 			}
 		}
 		
+		// The names are not exactly the same, let's see if we should replace the name and add a variant
 		if (!StringUtils.equals(personInDSpace.getFullName(), author.getFullName())) {
-			// The names are not exactly the same, let's see if we should add a variant
 			if ((
 					// It seems that the already saved name is shorter (maybe an abbreviation? only first surname?)
-					// Let's update it and save the previous name and a variant
+					// Let's update it and save the previous name as a variant
 					author.getFullName().length() > personInDSpace.getFullName().length()
 				) || (
 					// It seems that the already saved name misses some accents
@@ -1230,9 +1230,10 @@ public class Migrator {
 				) || (
 						// It seems that the already saved name has hyphens (maybe an "internationalized" variant?)
 						// or dots (abbreviations?)
-						// Let's update it to the "Spanish" custom...
+						// Let's update it to the "Spanish" custom (only if the new name is longer)...
 						!StringUtils.containsAny(author.getFullName(), "-.") && 
-						StringUtils.containsAny(personInDSpace.getFullName(), "-.")
+						StringUtils.containsAny(personInDSpace.getFullName(), "-.") &&
+						author.getFullName().length() >= personInDSpace.getFullName().length()
 					)) {
 				
 				JsonObject obj1 = new JsonObject();
@@ -1258,6 +1259,20 @@ public class Migrator {
 				logger.info(MessageFormat.format(
 						"[!PERSON UPDATE] Setting new visible name ''{0}'' (and marking ''{1}'' as a variant)",
 						author.getFullName(), personInDSpace.getFullName()));
+			} else {
+				// The names are not exactly the same, but shouldn't replace the existing name
+				// Let's add it as a variant if it does not exist yet
+				if (!personInDSpace.getNameVariants().contains(author.getLastName() + ", " + author.getFirstName())) {
+					JsonObject obj1 = new JsonObject();
+					obj1.addProperty("op", "add");
+					obj1.addProperty("path", "/metadata/person.name.variant");
+					obj1.addProperty("value", author.getLastName() + ", " + author.getFirstName());
+					objs.add(obj1);
+					logger.info(MessageFormat.format(
+							"[!PERSON UPDATE] Adding ''{0}'' as a variant for ''{1}''",
+							author.getFullName(), personInDSpace.getFullName()));
+				}
+
 			}
 		}
 
