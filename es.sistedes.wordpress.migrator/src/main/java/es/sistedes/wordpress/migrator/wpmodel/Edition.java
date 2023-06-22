@@ -139,13 +139,16 @@ public class Edition extends Track {
 		String description = super.getDescription();
 		description = description.replaceAll("<p>&nbsp;</p>", "").trim();
 		description = Pattern.compile(
-				"<p>\\s*<em>(?:.*?)\\(Eds?\\.\\), Actas de(?:.*?)</em>\\s*</p>", Pattern.DOTALL)
+				"<(.*?)></\\1>", Pattern.DOTALL)
+				.matcher(description).replaceAll("").trim();
+		description = Pattern.compile(
+				"<p>\\s*<em.*?>(?:.*?)\\(Eds?\\.\\), Actas de(?:.*?)</em>\\s*</p>", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
 				"<p>\\s*<i>(?:.*?)\\(Eds?\\.\\), Actas de(?:.*?)</i>\\s*</p>", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
-				"<ul>\\s*<li>(?:<a href=\"https?://biblioteca.sistedes.es\\S+\">.*?</li>)+\\s*</ul>", Pattern.DOTALL)
+				"<ul.*?>\\s*<li>(?:<a .*?href=\"https?://biblioteca.sistedes.es\\S+\">.*?</li>)+\\s*</ul>", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
 				"<!-- \\[begin:sub_tracks_conferencia\\] -->(?:.*?)<!-- \\[end:sub_tracks_conferencia\\] -->", Pattern.DOTALL)
