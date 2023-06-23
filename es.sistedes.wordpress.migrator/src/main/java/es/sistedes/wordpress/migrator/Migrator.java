@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -935,8 +934,7 @@ public class Migrator {
 							for (int i = 0; i < found.size(); i++) {
 								String name1 = author.getFullName();
 								String name2 = found.get(i).getFullName();
-								Integer distance = new LevenshteinDistance().apply(name1, name2);
-								float normalizedDistance = (float) distance / (float) Math.max(name1.length(), name2.length());
+								float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
 								if (normalizedDistance == 0) {
 									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
@@ -1099,7 +1097,7 @@ public class Migrator {
 				result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
 		return result;
 	}
-	
+
 	private boolean firstNameMatch(String name1, String name2) {
 		String[] split1 = name1.toLowerCase().split(" ");		
 		String[] split2 = name1.toLowerCase().split(" ");
@@ -1202,7 +1200,7 @@ public class Migrator {
 		} else {
 			if (author.getAffiliation() != null && 
 				personInDSpace.getAffiliations().stream()
-				.allMatch(a -> new JaroWinklerSimilarity().apply(a, author.getAffiliation()) < 0.9)) {
+				.allMatch(a -> normalizedLevenshteinDistance(a, author.getAffiliation()) < 0.1)) {
 					// Affiliations may be written in very different ways even when they are the same, so we use
 					// and approximation to determine if we should add it or not
 				JsonObject obj = new JsonObject();
@@ -1552,5 +1550,11 @@ public class Migrator {
         if (response.responseCode != AbstractMessage.RC_SUCCESS) {
         	throw new MigrationException("Unable to create / update URL for handle " + newHandle);
         }
+	}
+	
+	private  static float normalizedLevenshteinDistance(String str1, String str2) {
+		Integer distance = new LevenshteinDistance().apply(str1, str2);
+		float normalizedDistance = (float) distance / (float) Math.max(str1.length(), str2.length());
+		return normalizedDistance;
 	}
 }
