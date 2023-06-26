@@ -955,7 +955,7 @@ public class Migrator {
 								} else {
 									messageTemplate = "[!PERSON] Approximate match (>= 0.7) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-											result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+											found.get(i).getFamilyName(), found.get(i).getGivenName(), StringUtils.join(found.get(i).getEmails(), ", ")));
 									result = null;
 									continue;
 								}
@@ -990,9 +990,9 @@ public class Migrator {
 								result = found.get(i);
 								break;
 							} else {
-								messageTemplate = "[!PERSON] Approximate match (>= 0.1) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+								messageTemplate = "[!PERSON] Approximate match (>= 0.1) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, ({4})''";
 								logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-										result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+										names2, StringUtils.join(found.get(i).getEmails(), ", ")));
 								result = null;
 								continue;
 							}
