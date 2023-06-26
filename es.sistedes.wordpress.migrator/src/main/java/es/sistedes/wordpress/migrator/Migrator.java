@@ -973,55 +973,35 @@ public class Migrator {
 				if (match.isPresent()) {
 					messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
 					result = match.get();
-				} else if
-					(
-						// Found 
-						found.size() > 0 
-						// and
-						&&
-						(
-							// Full name match. Which needs:
-							(
-								// Exact surname match
-								StringUtils.equalsIgnoreCase(
-									StringUtils.stripAccents(author.getLastName().toLowerCase().replaceAll("[^\\w]+", "-")), 
-									StringUtils.stripAccents(found.get(0).getFamilyName().toLowerCase().replaceAll("[^\\w]+", "-")))
-								// and
-								&& 
-								// Name match, either by... 
-								(
-									// ... exact name match...
-									StringUtils.equalsIgnoreCase(
-										StringUtils.stripAccents(author.getFirstName().toLowerCase().replaceAll("[^\\w]+", "-")), 
-										StringUtils.stripAccents(found.get(0).getGivenName().toLowerCase().replaceAll("[^\\w]+", "-")))
-									// ... or...
-									|| 
-									// ... exact initial match (if any of the names is abbreviated)
-									firstNameMatch(StringUtils.stripAccents(author.getFirstName()), StringUtils.stripAccents(found.get(0).getGivenName()))
-								)
-							)
-							// or
-							||
-							(
-								// Name match
-								StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getFirstName()), StringUtils.stripAccents(found.get(0).getGivenName()))
-								// and
-								&&
-								// first surname match (if any of the names has two surnames)
-								(
-									(author.getLastName().split(" ").length == 1
-									&& found.get(0).getFamilyName().split(" ").length == 2
-									&& StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getLastName().split(" ")[0]), StringUtils.stripAccents(found.get(0).getFamilyName().split(" ")[0])))
-								||
-									(author.getLastName().split(" ").length == 2
-									&& found.get(0).getFamilyName().split(" ").length == 1
-									&& StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getLastName().split(" ")[0]), StringUtils.stripAccents(found.get(0).getFamilyName().split(" ")[0])))
-								)
-							)
-						)
-					) {
-					messageTemplate = "[!PERSON] Approximate match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
-					result = found.get(0);
+				} else {
+					for (int i = 0; i < found.size(); i++) {
+						String name1 = author.getFullName();
+						String name2 = found.get(i).getFullName();
+						float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
+						if (normalizedDistance == 0) {
+							messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							result = found.get(i);
+							break;
+						} else if (normalizedDistance < 0.1) {
+							messageTemplate = "[!PERSON] Almost exact (< 0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							result = found.get(i);
+							break;
+						} else if (normalizedDistance < 0.3) {
+							messageTemplate = "[!PERSON] Approximate match (< 0.3) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							result = found.get(i);
+							break;
+						} else if (normalizedDistance < 0.7) {
+							messageTemplate = "[!PERSON] Approximate match (< 0.7) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							result = found.get(i);
+							break;
+						} else {
+							messageTemplate = "[!PERSON] Approximate match (>= 0.7) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
+									result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+							result = null;
+							continue;
+						}
+					}
 				}
 			}
 		} else {
