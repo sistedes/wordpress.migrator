@@ -1200,7 +1200,7 @@ public class Migrator {
 					author.getAffiliation(), personInDSpace.getFullName(), null));
 		} else {
 			if (author.getAffiliation() != null && 
-				!personInDSpace.getAffiliations().stream()
+				personInDSpace.getAffiliations().stream()
 				.noneMatch(a -> normalizedLevenshteinDistance(a, author.getAffiliation()) < 0.1)) {
 					// Affiliations may be written in very different ways even when they are the same, so we use
 					// and approximation to determine if we should add it or not
