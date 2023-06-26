@@ -64,121 +64,121 @@ public class Article extends Document {
 		if (cleanTitle != null) return cleanTitle;
 		String rawTitle = StringUtils.trimToNull(title.get("rendered"));
 		Matcher matcher;
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\((:?[Tt]ool\\s*)[Dd]demo(?:straci[oó]n)?\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\((:?[Tt]ool\\s*)[Dd]demo(?:straci[oÃ³]n)?\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Tt]utorial\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Tt]utorial\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Ww]ork in [Pp]rogress\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Ww]ork in [Pp]rogress\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Tt]rabajo en [Pp]rogreso\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Tt]rabajo en [Pp]rogreso\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Tt]rabajo [Oo]riginal\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Tt]rabajo [Oo]riginal\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Rr]esumen\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Rr]esumen\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Aa]bstract\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Aa]bstract\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Ss]ummary\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Ss]ummary\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Ee]xtended [Aa]bstract\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Ee]xtended [Aa]bstract\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\(RELEVANTE YA PUBLICADO\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\(RELEVANTE YA PUBLICADO\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\(YA PUBLICADO\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\(YA PUBLICADO\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\(YA PUBLICADO\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\(YA PUBLICADO\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\(Trabajo ya publicado\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\(Trabajo ya publicado\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\([Aa]rtículo [Rr]elevante\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\([Aa]rtÃ­culo [Rr]elevante\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^«?(.*?)»?\\s*\\(Trabajo de alto nivel\\)\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^Â«?(.*?)Â»?\\s*\\(Trabajo de alto nivel\\)\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^\\([Aa]rtículo [Rr]elevante\\)\\s*«?(.*?)»?\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^\\([Aa]rtÃ­culo [Rr]elevante\\)\\s*Â«?(.*?)Â»?\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^\\s*[Tt]rabajo [Rr]elevante\\s*\\W*\\s*«?(.*?)»?\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^\\s*[Tt]rabajo [Rr]elevante\\s*\\W*\\s*Â«?(.*?)Â»?\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^\\([Tt]rabajo [Rr]elevante\\)\\s*«?(.*?)»?\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^\\([Tt]rabajo [Rr]elevante\\)\\s*Â«?(.*?)Â»?\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^ART[IÍ]CULO RELEVANTE:\\s*«?(.*?)»?\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^ART[IÃ]CULO RELEVANTE:\\s*Â«?(.*?)Â»?\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);
 			return cleanTitle;
 		}
-		matcher = Pattern.compile("^[Ee]xtended [Aa]bstract of\\s*«?(.*?)»?\\s*$").matcher(rawTitle);
+		matcher = Pattern.compile("^[Ee]xtended [Aa]bstract of\\s*Â«?(.*?)Â»?\\s*$").matcher(rawTitle);
 		if (matcher.matches()) {
 			LOGGER.info(MessageFormat.format("[TITLE] ''{0}'' -> ''{1}''", rawTitle, matcher.group(1)));
 			cleanTitle = matcher.group(1);

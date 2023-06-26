@@ -6,7 +6,7 @@
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-* Abel Gómez - initial API and implementation
+* Abel GÃ³mez - initial API and implementation
 *******************************************************************************/
 package es.sistedes.wordpress.migrator;
 

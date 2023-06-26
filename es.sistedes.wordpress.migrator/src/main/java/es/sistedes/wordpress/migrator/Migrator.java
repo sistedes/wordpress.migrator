@@ -6,7 +6,7 @@
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-* Abel Gómez - initial API and implementation
+* Abel Gï¿½mez - initial API and implementation
 *******************************************************************************/
 
 package es.sistedes.wordpress.migrator;
@@ -281,6 +281,7 @@ public class Migrator {
 	}
 
 	public Migrator(URL input, URL output, String user, String password, String prefix, PublicKeyAuthenticationInfo auth) {
+		System.setProperty("file.encoding", "UTF-8"); 
 		this.input = input;
 		this.output = output;
 		this.user = user;
@@ -592,8 +593,8 @@ public class Migrator {
 	}
 	
 	private Collection createCollection(final Community parent, final Edition edition) throws MigrationException, IOException, ParseException, URISyntaxException {
-		String name = "Artículos";
-		String _abstract = "Artículos publicados en las " + edition.getProceedingsName() + ".";
+		String name = "Artï¿½culos";
+		String _abstract = "Artï¿½culos publicados en las " + edition.getProceedingsName() + ".";
 		String description = _abstract;
 		Collection collection = new Collection(name, _abstract, description, parent.getSistedesIdentifier() + "/" + edition.getYear(), edition.getDate());
 		if (!isDryRun()) {
@@ -613,8 +614,8 @@ public class Migrator {
 	private Collection createPreliminariesCollection(final Community parent) throws Exception {
 		String name = "Preliminares";
 		String _abstract = "Preliminares de las Actas de las " + parent.getName() + ". "
-				+ "Los preliminares de las actas incluyen información adicional sobre las jornadas, "
-				+ "tales como la presentación de las jornadas, los comités participantes, "
+				+ "Los preliminares de las actas incluyen informaciï¿½n adicional sobre las jornadas, "
+				+ "tales como la presentaciï¿½n de las jornadas, los comitï¿½s participantes, "
 				+ "las conferencias invitadas, o los agradecimientos, entre otras secciones.";
 		String description = _abstract;
 		Collection collection = new Collection(name, _abstract, description, parent.getSistedesIdentifier() + "/PRELIMINARES", null);
@@ -626,19 +627,19 @@ public class Migrator {
 	
 	private Collection createBulletinsCollection(final Community parent) throws Exception {
 		String name = "Boletines de prensa";
-		String _abstract = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral "
+		String _abstract = "El Boletï¿½n informativo de Sistedes es, en la actualidad, una publicaciï¿½n trimestral "
 				+ "que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que "
-				+ "pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
-				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interés que vayan a suceder "
-				+ "próximamente";
-		String description = "El Boletín informativo de Sistedes es, en la actualidad, una publicación trimestral "
+				+ "pueda estar interesado en la Asociaciï¿½n. En los boletines se recogen tanto las noticias de "
+				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interï¿½s que vayan a suceder "
+				+ "prï¿½ximamente";
+		String description = "El Boletï¿½n informativo de Sistedes es, en la actualidad, una publicaciï¿½n trimestral "
 				+ "que recopila noticias recientes y relevantes, tanto para los socios como para todo aquel que "
-				+ "pueda estar interesado en la Asociación. En los boletines se recogen tanto las noticias de "
-				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interés que vayan a suceder "
-				+ "próximamente (congresos organizados por los socios, cursos, seminarios, tesis leídas, premios, etc.). "
-				+ "Los Corresponsales de Sistedes colaboran con la directiva de la asociación proporcionando el "
+				+ "pueda estar interesado en la Asociaciï¿½n. En los boletines se recogen tanto las noticias de "
+				+ "los hechos acaecidos en el periodo correspondiente, como aquellas de interï¿½s que vayan a suceder "
+				+ "prï¿½ximamente (congresos organizados por los socios, cursos, seminarios, tesis leï¿½das, premios, etc.). "
+				+ "Los Corresponsales de Sistedes colaboran con la directiva de la asociaciï¿½n proporcionando el "
 				+ "contenido de los boletines. Si usted desea contribuir a los mismos, puede contactar con los "
-				+ "editores enviando un mensaje de correo electrónico a la dirección "
+				+ "editores enviando un mensaje de correo electrï¿½nico a la direcciï¿½n "
 				+ "<a href=\"mailto:noticias@sistedes.es\">noticias@sistedes.es</a>.";
 		Collection collection = new Collection(name, _abstract, description, parent.getSistedesIdentifier() + "/BOLETINES", null, Type.BULLETIN);
 		if (!isDryRun()) {
@@ -655,9 +656,9 @@ public class Migrator {
 
 	private Collection createSeminarsCollection(final Community parent) throws Exception {
 		String name = "Seminarios Sistedes";
-		String _abstract = "Los Seminarios Sistedes son charlas sobre temas de interés para nuestra comunidad científica,"
+		String _abstract = "Los Seminarios Sistedes son charlas sobre temas de interï¿½s para nuestra comunidad cientï¿½fica,"
 				+ " impartidos por destacados miembros de la misma y/o reconocidos expertos en las materias objeto de los mismos.";
-		String description = "Los Seminarios Sistedes son charlas sobre temas de interés para nuestra comunidad científica,"
+		String description = "Los Seminarios Sistedes son charlas sobre temas de interï¿½s para nuestra comunidad cientï¿½fica,"
 				+ " impartidos por destacados miembros de la misma y/o reconocidos expertos en las materias objeto de los mismos.";
 		Collection collection = new Collection(name, _abstract, description, parent.getSistedesIdentifier() + "/SEMINARIOS", null, Type.SEMINAR);
 		if (!isDryRun()) {
@@ -1223,8 +1224,8 @@ public class Migrator {
 				) || (
 					// It seems that the already saved name misses some accents
 					// Let's update it...
-					StringUtils.containsAny(author.getFullName(), "áéíóúàèìòùäëïöüâêîôû") && 
-					!StringUtils.containsAny(personInDSpace.getFullName(), "áéíóúàèìòùäëïöüâêîôû")
+					StringUtils.containsAny(author.getFullName(), "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½") && 
+					!StringUtils.containsAny(personInDSpace.getFullName(), "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½")
 				) || (
 						// It seems that the already saved name has hyphens (maybe an "internationalized" variant?)
 						// or dots (abbreviations?)

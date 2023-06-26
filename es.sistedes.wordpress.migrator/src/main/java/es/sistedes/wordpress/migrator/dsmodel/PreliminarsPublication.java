@@ -43,7 +43,7 @@ public class PreliminarsPublication extends Publication {
 	public static PreliminarsPublication from(Collection collection, Track track) {
 		String cleanContent = track.getDescription().replaceAll("<p>&nbsp;</p>", "").trim();
 		cleanContent = cleanContent.replaceAll("&nbsp;"," ").trim();
-		cleanContent = cleanContent.replaceAll("[ †]+"," ").trim();
+		cleanContent = cleanContent.replaceAll("[ ¬†]+"," ").trim();
 		cleanContent = Pattern.compile("\\s*style=\".*?\"", Pattern.DOTALL).matcher(cleanContent).replaceAll("").trim();
 		cleanContent = Pattern.compile("<(.+?)>\\s*</\\1>\\s*", Pattern.DOTALL).matcher(cleanContent).replaceAll("").trim();
 		cleanContent = Pattern.compile("<(:?[Hh]\\d)>(.*?)</\\1>", Pattern.DOTALL).matcher(cleanContent).replaceAll("<h2>$2</h2>").trim();
@@ -68,10 +68,10 @@ public class PreliminarsPublication extends Publication {
 		
 		String title = track.getTitle().replaceFirst("^\\d+\\.\\W+", "");
 		String _abstract = "";
-		if (track.getTitle().matches(".*[Cc]omit[eÈ]\\s+[Dd]e\\s+[Pp]rograma.*")) {
-			_abstract = "ComitÈ de programa de las " + track.getEdition().getName() + ".";
-		} else if (track.getTitle().matches(".*[Cc]omit[eÈ]s?.*")) {
-			_abstract = "ComitÈs de las " + track.getEdition().getName() + ".";
+		if (track.getTitle().matches(".*[Cc]omit[e√©]\\s+[Dd]e\\s+[Pp]rograma.*")) {
+			_abstract = "Comit√© de programa de las " + track.getEdition().getName() + ".";
+		} else if (track.getTitle().matches(".*[Cc]omit[e√©]s?.*")) {
+			_abstract = "Comit√©s de las " + track.getEdition().getName() + ".";
 		} else if (track.getTitle().matches(".*[Pp]reliminares.*")) {
 			_abstract = "Prefacio de las " + track.getEdition().getName() + ".";
 			title = "Prefacio";
@@ -83,8 +83,8 @@ public class PreliminarsPublication extends Publication {
 			_abstract = "Conferencia invitada \"" + title.split(":")[0].trim() + "\" en las " + track.getEdition().getName() + ".";
 		} else if (track.getTitle().matches(".*[Kk]eynote.*")) {
 			_abstract = "Conferencia invitada \"" + title.split(":")[0].trim() + "\" en las " + track.getEdition().getName() + ".";
-		} else if (track.getTitle().matches(".*[IÕiÌ]ndice.*")) {
-			_abstract = "Õndice de las " + track.getEdition().getProceedingsName() + ".";
+		} else if (track.getTitle().matches(".*[I√çi√≠]ndice.*")) {
+			_abstract = "√çndice de las " + track.getEdition().getProceedingsName() + ".";
 		} else if (track.getTitle().matches(".*[Tt]utorial.*:.*")) {
 			_abstract = "Tutorial \"" + title.split(":")[1].trim() + "\" en las " + track.getEdition().getName() + ".";
 		}

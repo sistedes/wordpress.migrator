@@ -25,10 +25,10 @@ public class DocumentsLibrary extends Library {
 	}
 	
 	public String getDescription() {
-		return "Sistedes pone a disposición de sus miembros y simpatizantes su "
+		return "Sistedes pone a disposiciÃ³n de sus miembros y simpatizantes su "
 				+ "archivo documental, en el que se incluyen todo tipo de publicaciones (boletines de prensa, seminarios, "
-				+ "documentos, informes, etc.) que puedan ser de interés para las comunidades de Ingeniería del Software, "
-				+ "Bases de Datos y  Tecnologías de Desarrollo de Software.";
+				+ "documentos, informes, etc.) que puedan ser de interÃ©s para las comunidades de IngenierÃ­a del Software, "
+				+ "Bases de Datos y  TecnologÃ­as de Desarrollo de Software.";
 	}
 	
 	public List<Seminar> getSeminars() throws IOException {
@@ -69,7 +69,7 @@ public class DocumentsLibrary extends Library {
 				Matcher listMatcher = Pattern.compile(listPattern, Pattern.MULTILINE | Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(page);
 				if (listMatcher.find()) {
 					String list = listMatcher.group(1);
-					String itemPattern = "<li>\\s*<a .*?href=\"(\\S+boletin/boletines-de-prensa/20\\S+/\\S+)\".*?>Boletín n.*?</a></li>";
+					String itemPattern = "<li>\\s*<a .*?href=\"(\\S+boletin/boletines-de-prensa/20\\S+/\\S+)\".*?>BoletÃ­n n.*?</a></li>";
 					Matcher itemMatcher = Pattern.compile(itemPattern, Pattern.MULTILINE | Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(list);
 					while (itemMatcher.find()) {
 						bulletins.add(new Bulletin(new URL(itemMatcher.group(1).trim())));

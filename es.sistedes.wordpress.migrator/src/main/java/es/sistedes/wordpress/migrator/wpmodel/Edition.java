@@ -58,7 +58,7 @@ public class Edition extends Track {
 	}
 	
 	public String getName() {
-		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
+		String text = excerpt.get("rendered").replaceAll("Â ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("Actas de las (.*? \\(.*?\\))").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1);
@@ -102,7 +102,7 @@ public class Edition extends Track {
 	}
 
 	public String getLocation() {
-		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
+		String text = excerpt.get("rendered").replaceAll("Â ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("\\(" + conference.getAcronym() + "\\s*\\d+\\)\\.(.*?),").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1).trim();
@@ -112,7 +112,7 @@ public class Edition extends Track {
 	}
 
 	public String getProceedingsName() {
-		String text = excerpt.get("rendered").replaceAll(" ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
+		String text = excerpt.get("rendered").replaceAll("Â ", " "); // Replace ASCII 255 (non-breaking space) by regular space;
 		Matcher matcher = Pattern.compile("(Actas de las .*? \\(.*?\\))").matcher(text);
 		if (matcher.find()) {
 			return matcher.group(1).trim();
@@ -123,7 +123,7 @@ public class Edition extends Track {
 
 	public List<String> getEditors() {
 		List<String> editors = new ArrayList<>();
-		String text = excerpt.get("rendered").replaceAll(" ", " "); // replace non-breaking spaces
+		String text = excerpt.get("rendered").replaceAll("Â ", " "); // replace non-breaking spaces
 		Matcher matcher = Pattern.compile("<p>(?<ed1>.+?)\\s+(y\\s+(?<ed2>.+?)\\s+)?\\([Ee]ds?\\.\\)").matcher(text);
 		if (matcher.find()) {
 			if (matcher.group("ed1") != null) editors.add(matcher.group("ed1"));
@@ -157,7 +157,7 @@ public class Edition extends Track {
 				"<!-- \\[begin:cita-conferencia\\] -->(?:.*?)<!-- \\[end:cita-conferencia\\] -->", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
-				" A continuación se detalla el contenido de las actas:", Pattern.DOTALL)
+				" A continuaciÃ³n se detalla el contenido de las actas:", Pattern.DOTALL)
 				.matcher(description).replaceAll("").trim();
 		description = Pattern.compile(
 				"<ol\\s+id=\"articulo_a_conferencia_list\">(?:.*?)</ol>", Pattern.DOTALL)

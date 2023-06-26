@@ -45,7 +45,7 @@ public class Bulletin extends Document {
 			}
 		}
 		{
-			String pattern = "<div .*?>\\s*<p>Boletín .*?</p>\\s*<p>Handle:\\s*<a href=\"https?://hdl.handle.net.*?>(.*?)</a>\\s*</p>\\s*<p>\\s*<a href=\\\"(.*?)\\\">Descargar</a>\\s*</p>\\s*</div>"; 
+			String pattern = "<div .*?>\\s*<p>BoletÃ­n .*?</p>\\s*<p>Handle:\\s*<a href=\"https?://hdl.handle.net.*?>(.*?)</a>\\s*</p>\\s*<p>\\s*<a href=\\\"(.*?)\\\">Descargar</a>\\s*</p>\\s*</div>"; 
 			Matcher matcher = Pattern.compile(pattern, Pattern.MULTILINE | Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(page);
 			if (matcher.find()) {
 				this.handle = matcher.group(1).trim();
@@ -78,7 +78,7 @@ public class Bulletin extends Document {
 	
 	public String getDescription() {
 		DateFormat fmt = new SimpleDateFormat("MMMM 'de' yyyy", Locale.forLanguageTag("es"));
-		return "Boletín de Sistedes. " + StringUtils.capitalize(fmt.format(getDate())) + ".";
+		return "BoletÃ­n de Sistedes. " + StringUtils.capitalize(fmt.format(getDate())) + ".";
 	}
 	
 	public String getAbstract() {

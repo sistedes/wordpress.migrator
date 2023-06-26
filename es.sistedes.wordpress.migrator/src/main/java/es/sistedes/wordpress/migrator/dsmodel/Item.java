@@ -21,9 +21,9 @@ public class Item extends DSpaceEntity {
 	
 	public enum Type {
 		AUTHOR("Autor"),
-		PAPER("Artículo"),
+		PAPER("ArtÃ­culo"),
 		ABSTRACT("Resumen"),
-		BULLETIN("Boletín"),
+		BULLETIN("BoletÃ­n"),
 		SEMINAR("Seminario"),
 		PRELIMINARS("Preliminares");
 		

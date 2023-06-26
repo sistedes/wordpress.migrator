@@ -40,8 +40,8 @@ public class Collection extends DSpaceEntity {
 			String[] words = StringUtils.stripAccents(title).replaceAll("[^\\w\\s]", "").split("\\s+");
 			suffix = Arrays.asList(words).stream().filter(w -> !PARTICLES.contains(w)).map(w -> w.toUpperCase().substring(0, 1)).collect(Collectors.joining());
 		}
-		String _abstract = "Artículos en la categoría " + title + " publicados en las " + track.getEdition().getProceedingsName() + ".";
-		String description = "Artículos en la categoría <em>" + title + "</em> publicados en las <em>" + track.getEdition().getProceedingsName() + "</em>.";
+		String _abstract = "ArtÃ­culos en la categorÃ­a " + title + " publicados en las " + track.getEdition().getProceedingsName() + ".";
+		String description = "ArtÃ­culos en la categorÃ­a <em>" + title + "</em> publicados en las <em>" + track.getEdition().getProceedingsName() + "</em>.";
 		return new Collection(title, _abstract, description, community.getSistedesIdentifier() + "/" + suffix, date);
 	}
 
