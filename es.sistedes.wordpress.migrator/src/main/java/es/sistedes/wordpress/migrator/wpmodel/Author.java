@@ -103,7 +103,7 @@ public class Author {
 	}
 
 	private void parseName(String fullname) {
-		fullname = fullname.trim().replaceAll("\\.", ". ").replaceAll("\\s+", " ").replaceAll("–", "-");
+		fullname = fullname.trim().replaceAll("\\.", ". ").replaceAll("\\s+", " ").replaceAll("â€“", "-");
 		String[] exceptionFields = exceptions.get(fullname);
 		if (exceptionFields != null && StringUtils.isNotBlank(exceptionFields[0]) && StringUtils.isNotBlank(exceptionFields[1])) {
 			firstName = exceptionFields[0];
