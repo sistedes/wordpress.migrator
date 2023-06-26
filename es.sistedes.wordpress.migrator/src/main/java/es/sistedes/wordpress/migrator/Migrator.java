@@ -984,38 +984,38 @@ public class Migrator {
 							(
 								// Exact surname match
 								StringUtils.equalsIgnoreCase(
-									author.getLastName().toLowerCase().replaceAll("[^\\w]+", "-"), 
-									found.get(0).getFamilyName().toLowerCase().replaceAll("[^\\w]+", "-"))
+									StringUtils.stripAccents(author.getLastName().toLowerCase().replaceAll("[^\\w]+", "-")), 
+									StringUtils.stripAccents(found.get(0).getFamilyName().toLowerCase().replaceAll("[^\\w]+", "-")))
 								// and
 								&& 
 								// Name match, either by... 
 								(
 									// ... exact name match...
 									StringUtils.equalsIgnoreCase(
-										author.getFirstName().toLowerCase().replaceAll("[^\\w]+", "-"), 
-										found.get(0).getGivenName().toLowerCase().replaceAll("[^\\w]+", "-"))
+										StringUtils.stripAccents(author.getFirstName().toLowerCase().replaceAll("[^\\w]+", "-")), 
+										StringUtils.stripAccents(found.get(0).getGivenName().toLowerCase().replaceAll("[^\\w]+", "-")))
 									// ... or...
 									|| 
 									// ... exact initial match (if any of the names is abbreviated)
-									firstNameMatch(author.getFirstName(), found.get(0).getGivenName())
+									firstNameMatch(StringUtils.stripAccents(author.getFirstName()), StringUtils.stripAccents(found.get(0).getGivenName()))
 								)
 							)
 							// or
 							||
 							(
 								// Name match
-								StringUtils.equalsIgnoreCase(author.getFirstName(), found.get(0).getGivenName())
+								StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getFirstName()), StringUtils.stripAccents(found.get(0).getGivenName()))
 								// and
 								&&
 								// first surname match (if any of the names has two surnames)
 								(
 									(author.getLastName().split(" ").length == 1
 									&& found.get(0).getFamilyName().split(" ").length == 2
-									&& StringUtils.equalsIgnoreCase(author.getLastName().split(" ")[0], found.get(0).getFamilyName().split(" ")[0]))
+									&& StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getLastName().split(" ")[0]), StringUtils.stripAccents(found.get(0).getFamilyName().split(" ")[0])))
 								||
 									(author.getLastName().split(" ").length == 2
 									&& found.get(0).getFamilyName().split(" ").length == 1
-									&& StringUtils.equalsIgnoreCase(author.getLastName().split(" ")[0], found.get(0).getFamilyName().split(" ")[0]))
+									&& StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getLastName().split(" ")[0]), StringUtils.stripAccents(found.get(0).getFamilyName().split(" ")[0])))
 								)
 							)
 						)
