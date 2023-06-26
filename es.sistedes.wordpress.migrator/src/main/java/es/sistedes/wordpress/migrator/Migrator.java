@@ -1007,7 +1007,7 @@ public class Migrator {
 								StringUtils.equalsIgnoreCase(author.getFirstName(), found.get(0).getGivenName())
 								// and
 								&&
-								// first surname match (if any of the names has to surnames)
+								// first surname match (if any of the names has two surnames)
 								(
 									(author.getLastName().split(" ").length == 1
 									&& found.get(0).getFamilyName().split(" ").length == 2
