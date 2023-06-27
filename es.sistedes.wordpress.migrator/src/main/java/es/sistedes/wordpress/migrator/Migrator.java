@@ -1333,13 +1333,13 @@ public class Migrator {
 			if (files.length == 0) {
 				logger.error("Seminar '" + seminar.getTitle() + "' does not have files! Skipping file upload...");
 			} else {
-				attachBinaryFiles(ORIGINAL_BUNDLE, result,
-						Arrays.asList(files).stream().filter(f -> f.getName().endsWith("video.mp4"))
-						.collect(Collectors.toList()).toArray(s -> new File[s]));
+				attachBinaryFiles(ORIGINAL_BUNDLE, result, files);
+//				attachBinaryFiles(ORIGINAL_BUNDLE, result,
+//						Arrays.asList(files).stream().filter(f -> f.getName().endsWith("video.mp4"))
+//						.collect(Collectors.toList()).toArray(s -> new File[s]));
 //				attachBinaryFiles(OTHER_BUNDLE, result,
-				attachBinaryFiles(ORIGINAL_BUNDLE, result,
-						Arrays.asList(files).stream().filter(f -> !f.getName().endsWith("video.mp4"))
-						.collect(Collectors.toList()).toArray(s -> new File[s]));
+//						Arrays.asList(files).stream().filter(f -> !f.getName().endsWith("video.mp4"))
+//						.collect(Collectors.toList()).toArray(s -> new File[s]));
 			}
 		}
 		return result;
