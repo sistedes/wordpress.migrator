@@ -113,7 +113,7 @@ public class Migrator {
 	private final static String AUTHORIZATION_TOKEN = "Authorization";
 
 	private final static String ORIGINAL_BUNDLE = "ORIGINAL";
-//	private final static String OTHER_BUNDLE = "OTHER";
+	private final static String OTHER_BUNDLE = "OTHER";
 
 	private static final String API_ENDPOINT = "/api";
 	private static final String AUTHN_LOGIN_ENDPOINT = API_ENDPOINT + "/authn/login";
@@ -752,9 +752,9 @@ public class Migrator {
 					attachBinaryFiles(ORIGINAL_BUNDLE, result,
 							Arrays.asList(files).stream().filter(f -> f.getName().endsWith("pdf"))
 							.collect(Collectors.toList()).toArray(s -> new File[s]));
-//					attachBinaryFiles(OTHER_BUNDLE, result,
-//							Arrays.asList(files).stream().filter(f -> f.getName().endsWith("html"))
-//							.collect(Collectors.toList()).toArray(s -> new File[s]));
+					attachBinaryFiles(OTHER_BUNDLE, result,
+							Arrays.asList(files).stream().filter(f -> f.getName().endsWith("html"))
+							.collect(Collectors.toList()).toArray(s -> new File[s]));
 				}
 			} catch (Exception e) {
 				throw new MigrationException(e);
@@ -1333,7 +1333,11 @@ public class Migrator {
 			if (files.length == 0) {
 				logger.error("Seminar '" + seminar.getTitle() + "' does not have files! Skipping file upload...");
 			} else {
-				attachBinaryFiles(ORIGINAL_BUNDLE, result, files);
+				// Make sure that the first file being uploaded is the MP4 video file (since it is considered the primary bitstream)
+				List<File> filesList = new ArrayList<>();
+				filesList.addAll(Arrays.asList(files).stream().filter(f -> f.getName().endsWith("video.mp4")).collect(Collectors.toList()));
+				filesList.addAll(Arrays.asList(files).stream().filter(f -> !f.getName().endsWith("video.mp4")).collect(Collectors.toList()));
+				attachBinaryFiles(ORIGINAL_BUNDLE, result, filesList.toArray(s -> new File[s]));
 //				attachBinaryFiles(ORIGINAL_BUNDLE, result,
 //						Arrays.asList(files).stream().filter(f -> f.getName().endsWith("video.mp4"))
 //						.collect(Collectors.toList()).toArray(s -> new File[s]));
