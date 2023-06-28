@@ -46,7 +46,7 @@ public class BulletinPublication extends Publication {
 				bulletin.getHandle(), 
 				License.CC_BY_NC_ND.getName(),
 				bulletin.getDate());
-		publication.setProvenance("Automatically imported from " + bulletin.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC")));
+		publication.setProvenance(("Automatically imported from " + bulletin.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("GMT"))).replace("[GMT]", " (GMT)"));
 		publication.setIsPartOf("Boletines Sistedes");
 		publication.metadata.setPublisher("Sistedes");
 		return publication;

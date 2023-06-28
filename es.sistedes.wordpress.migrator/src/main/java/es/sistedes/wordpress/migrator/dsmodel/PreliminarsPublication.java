@@ -102,7 +102,7 @@ public class PreliminarsPublication extends Publication {
 				track.getEdition().getDate(),
 				cleanContent);
 		publication.setIsPartOf(track.getEdition().getProceedingsName());
-		publication.setProvenance("Automatically imported from " + track.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now().truncatedTo(ChronoUnit.SECONDS), ZoneId.of("UTC")));
+		publication.setProvenance(("Automatically imported from " + track.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now().truncatedTo(ChronoUnit.SECONDS), ZoneId.of("GMT"))).replace("[GMT]", " (GMT)"));
 		publication.metadata.setSistedesConferenceName(track.getEdition().getConference().getTitle());
 		publication.metadata.setSistedesConferenceAcronym(track.getEdition().getConference().getAcronym());
 		publication.metadata.setSistedesEditionName(track.getEdition().getName());
