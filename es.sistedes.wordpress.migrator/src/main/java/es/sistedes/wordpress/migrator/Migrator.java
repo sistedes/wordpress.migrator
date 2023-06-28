@@ -1331,7 +1331,8 @@ public class Migrator {
 			// Now, create bundles... 
 			final File[] files = publication.getFiles();
 			if (files.length == 0) {
-				logger.error("Seminar '" + seminar.getTitle() + "' does not have files! Skipping file upload...");
+				logger.warn("Seminar '" + seminar.getTitle() + "' does not have files! Marking as withdrawn...");
+				withdrawPublication(result);
 			} else {
 				// Make sure that the first file being uploaded is the MP4 video file (since it is considered the primary bitstream)
 				List<File> filesList = new ArrayList<>();
@@ -1347,6 +1348,31 @@ public class Migrator {
 			}
 		}
 		return result;
+	}
+
+	private void withdrawPublication(Publication result) throws Exception {
+		JsonArray objs = new JsonArray();
+		JsonObject obj1 = new JsonObject();
+		obj1.addProperty("op", "replace");
+		obj1.addProperty("path", "/withdrawn");
+		obj1.addProperty("value", true);
+		objs.add(obj1);
+		try (CloseableHttpClient client = httpClientBuilder.build()) {
+			HttpPatch patch = new HttpPatch(output + ITEMS_ENDPOINT + "/" + result.getUuid());
+			patch.setHeader(X_XSRF_TOKEN, dspaceAuth.getXsrfToken());
+			patch.setHeader(AUTHORIZATION_TOKEN, dspaceAuth.getJwtToken());
+			patch.setEntity(new StringEntity(objs.toString(), ContentType.APPLICATION_JSON));
+			try (CloseableHttpResponse response = client.execute(patch)) {
+				if (response.getCode() != HttpStatus.SC_OK) {
+					throw new MigrationException(MessageFormat.format("Unable to withdraw Seminar ''{0}''. HTTP request returned code {1}.",
+									result.getUuid(), response.getCode()));
+				}
+				EntityUtils.consume(response.getEntity());
+				if (response.getFirstHeader(DSPACE_XSRF_TOKEN) != null) {
+					dspaceAuth.updateXsrfToken(response.getFirstHeader(DSPACE_XSRF_TOKEN).getValue());
+				}
+			}
+		}
 	}
 	
 	private Publication createPublication(final Collection parent, final Publication publication) throws  MigrationException {
