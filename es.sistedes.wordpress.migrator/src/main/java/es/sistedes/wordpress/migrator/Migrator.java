@@ -348,8 +348,8 @@ public class Migrator {
 				authorsCollection = createCollection(sistedesCommunity, 
 					new Collection(
 							"Autores",
-							"Todos los autores que han contribuido a las jornadas Sistedes", 
-							"Todos los autores que han contribuido a las jornadas Sistedes", 
+							"Todos los autores que han contribuido a las jornadas y el archivo documental de Sistedes", 
+							"Todos los autores que han contribuido a las jornadas y el archivo documental de Sistedes", 
 							sistedesCommunity.getSistedesIdentifier() + "/AUTHORS",
 							null,
 							Type.AUTHOR));
