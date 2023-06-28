@@ -2,6 +2,10 @@ package es.sistedes.wordpress.migrator.dsmodel;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -37,6 +41,7 @@ public class SeminarPublication extends Publication {
 				License.CC_BY_NC_ND.getName(),
 				seminar.getDate());
 		publication.setIsPartOf("Seminarios Sistedes");
+		publication.setProvenance("Automatically imported from " + seminar.getUrl() + " on " + ZonedDateTime.ofInstant(Instant.now().truncatedTo(ChronoUnit.SECONDS), ZoneId.of("UTC")));
 		publication.metadata.setContributorBio(seminar.getBio());
 		publication.metadata.setPublisher("Sistedes");
 		return publication;

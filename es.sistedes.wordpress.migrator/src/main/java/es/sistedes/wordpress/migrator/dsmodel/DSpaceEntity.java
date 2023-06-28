@@ -75,6 +75,14 @@ public class DSpaceEntity {
 		this.metadata.setDescription(html);
 	}
 	
+	public String getProvenance() {
+		return this.metadata.getProvenance();
+	}
+	
+	public void setProvenance(String provenance) {
+		this.metadata.setProvenance(provenance);
+	}
+	
 	public String getAbstract() {
 		return this.metadata.getAbstract();
 	}

@@ -8,6 +8,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -67,6 +71,7 @@ public class Publication extends Item {
 				collection.getDate());
 		publication.setType(publication.isAbstract() ? Type.ABSTRACT.getName() : Type.PAPER.getName());
 		publication.setIsPartOf(article.getTrack().getEdition().getProceedingsName());
+		publication.setProvenance("Automatically imported from " + article.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now().truncatedTo(ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS), ZoneId.of("UTC")));
 		publication.metadata.setSistedesConferenceName(article.getTrack().getEdition().getConference().getTitle());
 		publication.metadata.setSistedesConferenceAcronym(article.getTrack().getEdition().getConference().getAcronym());
 		publication.metadata.setSistedesEditionName(article.getTrack().getEdition().getName());

@@ -5,6 +5,10 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -98,6 +102,7 @@ public class PreliminarsPublication extends Publication {
 				track.getEdition().getDate(),
 				cleanContent);
 		publication.setIsPartOf(track.getEdition().getProceedingsName());
+		publication.setProvenance("Automatically imported from " + track.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now().truncatedTo(ChronoUnit.SECONDS), ZoneId.of("UTC")));
 		publication.metadata.setSistedesConferenceName(track.getEdition().getConference().getTitle());
 		publication.metadata.setSistedesConferenceAcronym(track.getEdition().getConference().getAcronym());
 		publication.metadata.setSistedesEditionName(track.getEdition().getName());

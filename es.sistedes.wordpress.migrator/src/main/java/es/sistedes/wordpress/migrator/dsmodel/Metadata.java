@@ -38,6 +38,9 @@ public class Metadata {
 	@SerializedName("dc.description.abstract")
 	private List<MetadataEntry> abstracts = new ArrayList<>();
 	
+	@SerializedName("dc.description.provenance")
+	private List<MetadataEntry> descriptionsProvenance = new ArrayList<>();
+	
 	@SerializedName("dc.description.tableofcontents")
 	private List<MetadataEntry> tocs = new ArrayList<>();
 
@@ -153,6 +156,17 @@ public class Metadata {
 		this.descriptions.clear();
 		this.descriptions.add(new MetadataEntry(description));
 	}
+
+	public String getProvenance() {
+		return descriptionsProvenance.stream().findFirst().map(e ->  e.getValue()).orElse(null);
+	}
+
+	public void setProvenance(String provenance) {
+		if (StringUtils.isBlank(provenance)) return;
+		this.descriptionsProvenance.clear();
+		this.descriptionsProvenance.add(new MetadataEntry(provenance));
+	}
+	
 	
 	public String getAbstract() {
 		return abstracts.stream().findFirst().map(e ->  e.getValue()).orElse(null);

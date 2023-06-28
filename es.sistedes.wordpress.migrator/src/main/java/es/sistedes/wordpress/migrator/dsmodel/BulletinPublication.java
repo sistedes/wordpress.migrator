@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -43,6 +46,7 @@ public class BulletinPublication extends Publication {
 				bulletin.getHandle(), 
 				License.CC_BY_NC_ND.getName(),
 				bulletin.getDate());
+		publication.setProvenance("Automatically imported from " + bulletin.getLink() + " on " + ZonedDateTime.ofInstant(Instant.now(), ZoneId.of("UTC")));
 		publication.setIsPartOf("Boletines Sistedes");
 		publication.metadata.setPublisher("Sistedes");
 		return publication;

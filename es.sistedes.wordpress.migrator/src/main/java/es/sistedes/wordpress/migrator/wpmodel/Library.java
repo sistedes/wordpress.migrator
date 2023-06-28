@@ -6,6 +6,7 @@ public class Library {
 
 	// BEGIN: JSON fields
 	protected String id;
+	protected String link;
 	protected Map<String, String> title; 
 	protected Map<String, String> content; 
 	protected Map<String, Map<String, String>[]> _links;
@@ -27,5 +28,8 @@ public class Library {
 	public String getCollectionUrl() {
 		return _links.get("collection")[0].get("href");
 	}
-
+	
+	public String getLink() {
+		return link;
+	}
 }

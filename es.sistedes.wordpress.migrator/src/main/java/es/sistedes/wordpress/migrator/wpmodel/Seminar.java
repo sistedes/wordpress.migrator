@@ -132,4 +132,8 @@ public class Seminar {
 	public String getHandleUri() {
 		return "https://hdl.handle.net/" + StringUtils.trimToNull(getHandle());
 	}
+	
+	public URL getUrl() {
+		return url;
+	}
 }
