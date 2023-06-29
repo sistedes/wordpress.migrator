@@ -1200,8 +1200,8 @@ public class Migrator {
 				) || (
 					// It seems that the already saved name misses some accents
 					// Let's update it...
-					StringUtils.containsAny(author.getFullName(), "áéíóúàèìòùäëïöüâêîôû") && 
-					!StringUtils.containsAny(personInDSpace.getFullName(), "áéíóúàèìòùäëïöüâêîôû")
+					StringUtils.containsAny(author.getFullName(), "áéíóúàèìòùäëïöüâêîôûãẽĩõũ") && 
+					!StringUtils.containsAny(personInDSpace.getFullName(), "áéíóúàèìòùäëïöüâêîôûãẽĩõũ")
 				) || (
 						// It seems that the already saved name has hyphens (maybe an "internationalized" variant?)
 						// or dots (abbreviations?)
