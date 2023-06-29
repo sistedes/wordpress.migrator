@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.text.DateFormat;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -96,7 +97,10 @@ public class Seminar {
 		for (String s : authoringNote.split(",;")) {
 			Matcher matcher = Pattern.compile("([^\\(]+)\\s*(?:\\((.*?)\\))?[,;]?", Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(s.trim());
 			while (matcher.find()) {
-				result.add(new Author(matcher.group(1), null, matcher.group(2)));
+				if (StringUtils.contains("\"", matcher.group(2))) {
+					logger.warn(MessageFormat.format("Affiliation of ''{0}'' has quotes in it (''{1}''), removing them", matcher.group(1), matcher.group(2)));
+				}
+				result.add(new Author(matcher.group(1), null,StringUtils.replace(matcher.group(2), "\"", "")));
 			}
 		}
 		if (result.isEmpty()) {

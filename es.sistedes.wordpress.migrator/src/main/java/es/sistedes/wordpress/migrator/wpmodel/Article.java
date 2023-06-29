@@ -271,10 +271,16 @@ public class Article extends Document {
 			authors = new ArrayList<>();
 			for (int i = 1; i <= 8; i++) {
 				if (StringUtils.isNotBlank(metadata.get("author_name_" + i))) {
+					String name = metadata.get("author_name_" + i);
+					String email = metadata.get("author_email_" + i);
+					String affiliation = metadata.get("author_univ_" + i);
+					if (StringUtils.contains("\"", affiliation)) {
+						LOGGER.warn(MessageFormat.format("Affiliation of ''{0}'' has quotes in it (''{1}''), removing them", name, affiliation));
+					}
 					authors.add(new Author(
-							StringUtils.trimToNull(metadata.get("author_name_" + i)), 
-							StringUtils.trimToNull(metadata.get("author_email_" + i)), 
-							StringUtils.trimToNull(metadata.get("author_univ_" + i))));
+							StringUtils.trimToNull(name), 
+							StringUtils.trimToNull(email), 
+							StringUtils.trimToNull(StringUtils.replace(affiliation, "\"", ""))));
 				}
 			}
 			authors = Collections.unmodifiableList(authors);
