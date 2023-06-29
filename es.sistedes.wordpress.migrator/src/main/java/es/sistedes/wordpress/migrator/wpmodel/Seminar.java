@@ -97,7 +97,7 @@ public class Seminar {
 		for (String s : authoringNote.split(",;")) {
 			Matcher matcher = Pattern.compile("([^\\(]+)\\s*(?:\\((.*?)\\))?[,;]?", Pattern.DOTALL | Pattern.UNICODE_CHARACTER_CLASS).matcher(s.trim());
 			while (matcher.find()) {
-				if (StringUtils.contains("\"", matcher.group(2))) {
+				if (StringUtils.contains(matcher.group(2), "\"")) {
 					logger.warn(MessageFormat.format("Affiliation of ''{0}'' has quotes in it (''{1}''), removing them", matcher.group(1), matcher.group(2)));
 				}
 				result.add(new Author(matcher.group(1), null,StringUtils.replace(matcher.group(2), "\"", "")));

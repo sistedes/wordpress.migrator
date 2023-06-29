@@ -274,7 +274,7 @@ public class Article extends Document {
 					String name = metadata.get("author_name_" + i);
 					String email = metadata.get("author_email_" + i);
 					String affiliation = metadata.get("author_univ_" + i);
-					if (StringUtils.contains("\"", affiliation)) {
+					if (StringUtils.contains(affiliation, "\"")) {
 						LOGGER.warn(MessageFormat.format("Affiliation of ''{0}'' has quotes in it (''{1}''), removing them", name, affiliation));
 					}
 					authors.add(new Author(
