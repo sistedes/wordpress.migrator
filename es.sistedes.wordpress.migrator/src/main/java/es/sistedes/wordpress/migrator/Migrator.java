@@ -978,7 +978,7 @@ public class Migrator {
 						String name1 = author.getFullName();
 						List<String> names2 = new ArrayList<>();
 						names2.add(found.get(i).getFullName());
-						names2.addAll(found.get(i).getNameVariants().stream().map(n -> n.split(", *")[0] + " " + n.split(", *")[1]).collect(Collectors.toList())); 
+						names2.addAll(found.get(i).getNameVariants().stream().map(n -> n.split(", *")[1] + " " + n.split(", *")[0]).collect(Collectors.toList())); 
 						for (String name2 : names2) {
 						float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
 							if (normalizedDistance == 0) {
@@ -986,7 +986,7 @@ public class Migrator {
 								result = found.get(i);
 								break;
 							} else if (normalizedDistance < 0.4) {
-								messageTemplate = "[!PERSON] Almost exact (< 0.4) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+								messageTemplate = "[!PERSON] Approximate match (< 0.4) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
 							} else {
