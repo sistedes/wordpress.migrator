@@ -985,14 +985,14 @@ public class Migrator {
 								messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
-							} else if (normalizedDistance < 0.2) {
-								messageTemplate = "[!PERSON] Almost exact (< 0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+							} else if (normalizedDistance < 0.4) {
+								messageTemplate = "[!PERSON] Almost exact (< 0.4) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
 							} else {
-								messageTemplate = "[!PERSON] Approximate match (>= 0.1) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, ({4})''";
+								messageTemplate = "[!PERSON] Approximate match (>= 0.4) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, ({4})''";
 								logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-										names2, StringUtils.join(found.get(i).getEmails(), ", ")));
+										name2, StringUtils.join(found.get(i).getEmails(), ", ")));
 								result = null;
 								continue;
 							}
