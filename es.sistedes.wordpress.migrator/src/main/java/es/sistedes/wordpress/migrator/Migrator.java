@@ -936,19 +936,19 @@ public class Migrator {
 								String name1 = author.getFullName();
 								String name2 = found.get(i).getFullName();
 								float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
-								if (normalizedDistance == 0) {
+								if (Math.signum(normalizedDistance) == 0.0f) {
 									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance < 0.1) {
+								} else if (normalizedDistance < 0.1f) {
 									messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance < 0.3) {
+								} else if (normalizedDistance < 0.3f) {
 									messageTemplate = "[!PERSON] Approximate match (< 0.3) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
-								} else if (normalizedDistance < 0.7) {
+								} else if (normalizedDistance < 0.7f) {
 									messageTemplate = "[!PERSON] Approximate match (< 0.7) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
@@ -981,15 +981,15 @@ public class Migrator {
 						names2.addAll(found.get(i).getNameVariants().stream().map(n -> n.split(", *")[1] + " " + n.split(", *")[0]).collect(Collectors.toList())); 
 						for (String name2 : names2) {
 						float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
-							if (normalizedDistance == 0) {
+							if (Math.signum(normalizedDistance) == 0.0f) {
 								messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
-							} else if (normalizedDistance < 0.1) {
+							} else if (normalizedDistance < 0.1f) {
 								messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
-							} else if (normalizedDistance < 0.35) {
+							} else if (normalizedDistance < 0.35f) {
 								messageTemplate = "[!PERSON] Approximate match (< 0.35) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 								result = found.get(i);
 								break;
