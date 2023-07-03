@@ -941,7 +941,7 @@ public class Migrator {
 									result = found.get(i);
 									break;
 								} else if (normalizedDistance < 0.1) {
-									messageTemplate = "[!PERSON] Almost exact (< 0.1) match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+									messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
 									result = found.get(i);
 									break;
 								} else if (normalizedDistance < 0.3) {
