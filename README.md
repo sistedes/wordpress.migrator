@@ -1,8 +1,8 @@
-# SISTEDES Digital Library Wordpress migrator
+# Sistedes Digital Library Wordpress migrator
 
-**QUICK (not so quick) and DIRTY (quite dirty)** utility to migrate from the legacy Wordpress-based SISTEDES Digital Library to the [DSpace 7.x](https://dspace.lyrasis.org/) platform.
+**QUICK (not so quick) and DIRTY (quite dirty)** utility to migrate from the legacy Wordpress-based Sistedes Digital Library to the [DSpace 7.x](https://dspace.lyrasis.org/) platform.
 
-**This is an _ad hoc_ implementation** for the Wordpress-based SISTEDES Digital Library that has been hosted at https://biblioteca.sistedes.es from 2015 until 2023, **and is not intended to be reused in any way**.
+**This is an _ad hoc_ implementation** for the Wordpress-based Sistedes Digital Library that has been hosted at https://biblioteca.Sistedes.es from 2015 until 2023, **and is not intended to be reused in any way**.
 
 The tool logs **A LOT** of information, so that errors in the source legacy digital library can be detected and fixed before the final migration.
 
@@ -11,8 +11,8 @@ The tool logs **A LOT** of information, so that errors in the source legacy digi
 ```
 usage: java -jar <this-file.jar> -i <input-url> [-c <conference>] [-s
        <start-year>] [-e <end-year>] -o <output-url> -u <user> -p
-       <password> -f <frontend-url> [-w <delay>] -h <prefix> -k <key> [-x
-       <key>] [-m] [-t] [-d]
+       <password> [-w <delay>] -h <prefix> -k <key> [-x <key>] [-m] [-t]
+       [-d]
  -i,--input <input-url>          Base URL of the Wordpress Sistedes
                                  Digital Library to read
  -c,--conferences <conference>   Limit the migration to the specified
@@ -30,8 +30,6 @@ usage: java -jar <this-file.jar> -i <input-url> [-c <conference>] [-s
  -u,--user <user>                User of the DSpace Sistedes Digital
                                  Library with write privileges
  -p,--password <password>        Password of the user
- -f,--frontend <frontend-url>    Base URL of the frontend of the DSpace
-                                 Sistedes Digital Library
  -w,--waiting-time <delay>       Time to wait (in ms) between connections
                                  to the Sistedes Digital Library to avoid
                                  flooding it (optional, no delay if not
@@ -48,7 +46,9 @@ usage: java -jar <this-file.jar> -i <input-url> [-c <conference>] [-s
                                  DSpace instance
 ```
 
-**Note:** this program will write temporary and cache files in the working directory:
+**Note:** this program will write temporary and cache files in the working directories:
 
 * A `exceptions.txt` file will be created so that it can be used in subsequent executions to manually specify exceptions on how names and surnames are detected when parsing publications authors.
 * A `pdfcache` directory will be created so that PDF files of retrieved articles will be stored there and cached so that they won't be downloaded in subsequent executions.
+
+Also, it expects to have a copy of the seminars files in a `videocache` directory. If no files for a seminar are found, it will be created as a `withdrawn` Seminar.
