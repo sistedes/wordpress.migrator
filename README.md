@@ -1,8 +1,11 @@
+:warning: | **This tool is no longer needed, since the migration of the Sistedes Digital Library from Wordpress to DSpace took place in Sept. 2023** | :warning:
+----------|-------------------------------------------------------------------------------------------------------------------------------|----------
+
 # Sistedes Digital Library Wordpress migrator
 
 **QUICK (not so quick) and DIRTY (quite dirty)** utility to migrate from the legacy Wordpress-based Sistedes Digital Library to the [DSpace 7.x](https://dspace.lyrasis.org/) platform.
 
-**This is an _ad hoc_ implementation** for the Wordpress-based Sistedes Digital Library that has been hosted at https://biblioteca.Sistedes.es from 2015 until 2023, **and is not intended to be reused in any way**.
+**This is an _ad hoc_ implementation** for the Wordpress-based Sistedes Digital Library that has been hosted at https://biblioteca.sistedes.es from 2015 until 2023, **and is not intended to be reused in any way**.
 
 The tool logs **A LOT** of information, so that errors in the source legacy digital library can be detected and fixed before the final migration.
 
