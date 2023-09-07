@@ -94,6 +94,7 @@ import net.handle.hdllib.HandleValue;
 import net.handle.hdllib.ModifyValueRequest;
 import net.handle.hdllib.PublicKeyAuthenticationInfo;
 import net.handle.hdllib.ResolutionRequest;
+import net.handle.hdllib.ResolutionResponse;
 import net.handle.hdllib.Util;
 
 /**
@@ -1536,18 +1537,10 @@ public class Migrator {
         
         int timestamp = (int) (System.currentTimeMillis() / 1000);
         
-        boolean found = false;
-        {
-        	ResolutionRequest request = new ResolutionRequest(Util.encodeString(newHandle), null, null, null);
-        	request.authoritative = true;
-        	AbstractResponse response = resolver.processRequest(request);
-        	found = (response.responseCode == AbstractMessage.RC_SUCCESS);
-        }
-
         HandleValue urlVal = new HandleValue(1, Util.encodeString("URL"), Util.encodeString(targetUrl), HandleValue.TTL_TYPE_RELATIVE, 86400, timestamp, null, true, true, true, false);
 
         AbstractRequest request = null;
-        if (found) {
+        if (handleExists(newHandle)) {
         	request = new ModifyValueRequest(Util.encodeString(newHandle), urlVal, auth);
         	request.authoritative = true;
         } else {
@@ -1562,6 +1555,21 @@ public class Migrator {
         if (response.responseCode != AbstractMessage.RC_SUCCESS) {
         	throw new MigrationException("Unable to create / update URL for handle " + newHandle);
         }
+	}
+	
+	private static boolean handleExists(String handle) throws HandleException {
+		HandleResolver resolver = new HandleResolver();
+		ResolutionRequest request = new ResolutionRequest(Util.encodeString(handle), null, null, null);
+		request.authoritative = true;
+		AbstractResponse response = resolver.processRequest(request);
+		return Arrays.asList(((ResolutionResponse) response).getHandleValues()).stream()
+				// The Sistedes Handle server uses a template (see "config.dct" in the Sistedes
+				// Handle server) that automatically generates non-existing Handles on the fly.
+				// Thus, in order to detect that a Handle exists (i.e., it has been explicitly
+				// created registered in the database), we must check that the record does not
+				// include an entry of type "SISTEDES_GENERATED" at the index 999.
+				// This value is explicitly created by the template configured in the server.
+				.allMatch(val -> val.getIndex() != 999 && !"SISTEDES_GENERATED".equals(val.getTypeAsString()));
 	}
 	
 	private  static float normalizedLevenshteinDistance(String str1, String str2) {
