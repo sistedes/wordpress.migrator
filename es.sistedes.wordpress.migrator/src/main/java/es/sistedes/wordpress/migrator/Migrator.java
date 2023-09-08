@@ -929,7 +929,9 @@ public class Migrator {
 	private Person findPersonFromAuthor(Author author) throws MigrationException {
 		Person result = null;
 		// First try to search by e-mail
-		result = searchAuthorByEmail(author);
+		if (author.getEmail() != null) {
+			result = searchAuthorByEmail(author);
+		}
 		// Next, if not find, try by full name
 		if (result != null)
 			result = searchAuthorByName(author);
