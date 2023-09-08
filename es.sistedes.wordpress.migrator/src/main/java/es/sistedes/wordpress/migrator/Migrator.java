@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
@@ -1305,12 +1306,98 @@ public class Migrator {
 			logger.info(MessageFormat.format(
 					"[!PERSON UPDATE] Adding affiliation ''{0}'' to ''{1}'' (previous was ''{2}'')",
 					author.getAffiliation(), personInDSpace.getFullName(), null));
-		} else {
-			if (author.getAffiliation() != null && 
-				personInDSpace.getAffiliations().stream()
-				.noneMatch(a -> normalizedLevenshteinDistance(a, author.getAffiliation()) < 0.1)) {
-					// Affiliations may be written in very different ways even when they are the same, so we use
-					// and approximation to determine if we should add it or not
+		} else if (author.getAffiliation() != null) {
+			boolean found = false;
+			for (String aff : personInDSpace.getAffiliations()) {
+				if (StringUtils.equals(
+						StringUtils.normalizeSpace(RegExUtils.replaceAll(StringUtils.stripAccents(author.getAffiliation().toLowerCase()), "[\\p{Punct}\\s]+", " ")), 
+						StringUtils.normalizeSpace(RegExUtils.replaceAll(StringUtils.stripAccents(aff.toLowerCase()), "[\\p{Punct}\\s]+", " ")))
+					) {
+					// Affiliations are the same (when removing accents, puntuation, and casing)
+					found = true;
+
+					// Nevertheless, let's decide which one to keep...
+
+					// First, prefer the one with more commas and dots
+					if (author.getAffiliation().replaceAll("[^,\\.]", "").length() > aff.replaceAll("[^,\\.]", "").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "add");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "remove");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} else if (author.getAffiliation().replaceAll("[^,\\.]", "").length() < aff.replaceAll("[^,\\.]", "").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "remove");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "add");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} 
+					// Then, the one with more accents
+					else if (author.getAffiliation().replaceAll("[^áéíóúàèìòùäëïöüâêîôûãẽĩõũ]", "").length() > aff.replaceAll("[^áéíóúàèìòùäëïöüâêîôûãẽĩõũ]", "").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "add");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "remove");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} else if (author.getAffiliation().replaceAll("[^áéíóúàèìòùäëïöüâêîôûãẽĩõũ]", "").length() < aff.replaceAll("[^áéíóúàèìòùäëïöüâêîôûãẽĩõũ]", "").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "remove");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "add");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} else {
+						// Keep it as it is...
+					}
+				} else if (normalizedLevenshteinDistance(aff, author.getAffiliation()) < 0.1) {
+					// Affiliation is very similar, keep the longest one (w/o considering punctuation or spaces) and do not continue checking...
+					found = true;
+					if (author.getAffiliation().replaceAll("[\\p{Punct}\\s]", " ").length() > aff.replaceAll("[\\p{Punct}\\s]", " ").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "add");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "remove");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} else if (author.getAffiliation().replaceAll("[^,\\.]", "").length() < aff.replaceAll("[^,\\.]", "").length()) {
+						JsonObject obj1 = new JsonObject();
+						obj1.addProperty("op", "remove");
+						obj1.addProperty("path", "/metadata/person.affiliation.name");
+						obj1.addProperty("value", author.getAffiliation());
+						objs.add(obj1);
+						JsonObject obj2 = new JsonObject();
+						obj2.addProperty("op", "add");
+						obj2.addProperty("path", "/metadata/person.affiliation.name");
+						obj2.addProperty("value", aff);
+						objs.add(obj2);
+					} 
+					break;
+				} 
+			}
+			if (!found) {
 				JsonObject obj = new JsonObject();
 				obj.addProperty("op", "add");
 				obj.addProperty("path", "/metadata/person.affiliation.name");
