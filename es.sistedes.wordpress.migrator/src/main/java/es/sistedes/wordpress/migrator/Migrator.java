@@ -24,6 +24,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +61,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.simplenamematcher.SimpleNameMatcher;
 
 import es.sistedes.wordpress.migrator.dsmodel.BulletinPublication;
 import es.sistedes.wordpress.migrator.dsmodel.Bundle;
@@ -106,6 +108,9 @@ import net.handle.hdllib.Util;
  *
  */
 public class Migrator {
+	
+	private static final Double NAME_SIMILARITY_THRESHOLD_WHEN_MAIL_MATCHES = 50.0d;
+	private static final Double NAME_SIMILARITY_THRESHOLD_WHEN_NAME_MATCHES = 90.0d;
 	
 	final static Logger logger = LoggerFactory.getLogger(Migrator.class);
 
@@ -923,182 +928,301 @@ public class Migrator {
 	
 	private Person findPersonFromAuthor(Author author) throws MigrationException {
 		Person result = null;
-		List<Person> found = null;
-		String messageTemplate = "";
-		if (!isInteractive()) {
-			if (author.getEmail() != null) {
-				found = findPersons(author.getEmail());
-				if (!found.isEmpty()) {
-					for (String foundEmail : found.get(0).getEmails()) {
-						// Try to match the Person using any of the saved e-mails...
-						if (StringUtils.equalsIgnoreCase(author.getEmail(), foundEmail)) {
-							// ... but make sure that the names have at least some similarity
-							for (int i = 0; i < found.size(); i++) {
-								String name1 = author.getFullName();
-								String name2 = found.get(i).getFullName();
-								float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
-								if (Math.signum(normalizedDistance) == 0.0f) {
-									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									result = found.get(i);
-									break;
-								} else if (normalizedDistance < 0.1f) {
-									messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									result = found.get(i);
-									break;
-								} else if (normalizedDistance < 0.3f) {
-									messageTemplate = "[!PERSON] Approximate match (< 0.3) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									result = found.get(i);
-									break;
-								} else if (normalizedDistance < 0.7f) {
-									messageTemplate = "[!PERSON] Approximate match (< 0.7) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									result = found.get(i);
-									break;
-								} else {
-									messageTemplate = "[!PERSON] Approximate match (>= 0.7) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-									logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-											found.get(i).getFamilyName(), found.get(i).getGivenName(), StringUtils.join(found.get(i).getEmails(), ", ")));
-									result = null;
-									continue;
-								}
-							}
-						} else {
-							result = null;
-						}
-					}
-				}
-			}
-			if (result == null) {
-				// Try to match the Person using the name 
-				found = findPersons(author.getFullName());
-				Optional<Person> match = found.stream().filter(f -> StringUtils.equalsIgnoreCase(author.getFullName(), f.getFullName())).findAny();
-				if (match.isPresent()) {
-					messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
-					result = match.get();
-				} else {
-					for (int i = 0; i < found.size(); i++) {
-						String name1 = author.getFullName();
-						List<String> names2 = new ArrayList<>();
-						names2.add(found.get(i).getFullName());
-						names2.addAll(found.get(i).getNameVariants().stream().map(n -> n.split(", *")[1] + " " + n.split(", *")[0]).collect(Collectors.toList())); 
-						for (String name2 : names2) {
-						float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
-							if (Math.signum(normalizedDistance) == 0.0f) {
-								messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-								result = found.get(i);
-								break;
-							} else if (normalizedDistance < 0.1f) {
-								messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-								result = found.get(i);
-								break;
-							} else if (normalizedDistance < 0.35f) {
-								messageTemplate = "[!PERSON] Approximate match (< 0.35) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
-								result = found.get(i);
-								break;
-							} else {
-								messageTemplate = "[!PERSON] Approximate match (>= 0.35) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, ({4})''";
-								logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-										name2, StringUtils.join(found.get(i).getEmails(), ", ")));
-								result = null;
-								continue;
-							}
-						}
-					}
-				}
-			}
-		} else {
-			// Interactive way, try to find an exact match in author name
-			found = findPersons(author.getFullName().replaceAll("\\W+", " "));
-			if (found.isEmpty() && StringUtils.isNotBlank(author.getEmail())) {
-				// If nothing is found, try using th e-mail...
-				found = findPersons(author.getEmail());
-			}
-			if (found.isEmpty() && author.getLastName().split("[ -]+").length > 1) {
-				// If nothing is found, try relaxing the surnames
-				found = findPersons(author.getFirstName() + " " + author.getLastName().split("[ -]+")[0]);
-			}
-			// Try to do an exact match...
-			Optional<Person> match = found.stream().filter(
-					f -> StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getFullName()), StringUtils.stripAccents(f.getFullName()))).findAny();
-			if (match.isPresent()) {
-				messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
-				result = match.get();
-			} else if (!found.isEmpty()){
-				// Try to match with any of the alternative names but making sure at least one e-mail matches
-				for (Person person : found) {
-					if (author.getEmail() != null
-						&&
-						person.getNameVariants().stream()
-							.filter(v -> StringUtils.equalsIgnoreCase(
-									StringUtils.stripAccents(author.getLastName() + ", " + author.getFirstName()), StringUtils.stripAccents(v))).findAny()
-							.isPresent()
-						&& 
-						person.getEmails().stream()
-							.filter(e -> StringUtils.equalsIgnoreCase(author.getEmail(), e)).findAny()
-							.isPresent()) {
-						messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
-						result = person;
-						break;
-					}
-				}
-				if (result == null) {
-					// We were not lucky, ask the user....
-					Integer selection;
-					do {
-						selection = null;
-						System.out.println(MessageFormat.format("Unable to find an exact match for:\n    {0}, {1} <{2}> ({3})", 
-								author.getLastName(), author.getFirstName(), author.getEmail(), author.getAffiliation()));
-						System.out.println("Possible candidates are:");
-						System.out.println("[0] None");
-						for (int i = 0; i < found.size(); i++) {
-							System.out.println(MessageFormat.format("[{0}] {1}, {2} <{3}> ({4})", 
-									i+1, found.get(i).getFamilyName(), found.get(i).getGivenName(), 
-									StringUtils.join(found.get(i).getEmails(), ", ") , StringUtils.join(found.get(i).getAffiliations(), ", ")));
-						}
-						Toolkit.getDefaultToolkit().beep();
-						System.out.print(MessageFormat.format("Which one corresponds to {0}, {1}? ", 
-								author.getLastName(), author.getFirstName()));
-						BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-						try {
-							selection = Integer.valueOf(reader.readLine());
-						} catch (Exception e) {
-							selection = null;
-						}
-					} while (selection == null || selection < 0 || selection > found.size());
-					if (selection > 0) {
-						result = found.get(selection - 1);
-						messageTemplate = "[!PERSON] Manually set match for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
-					}
-				}
-			}
-
-		}
-		if (result == null) {
-			messageTemplate = "[!PERSON] No match found for ''{0}, {1}'' (''{2}'')";
-		}
-		logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
-				result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+		// First try to search by e-mail
+		result = searchAuthorByEmail(author);
+		// Next, if not find, try by full name
+		if (result != null)
+			result = searchAuthorByName(author);
 		return result;
 	}
 
-	private boolean firstNameMatch(String name1, String name2) {
-		String[] split1 = name1.toLowerCase().split(" ");		
-		String[] split2 = name1.toLowerCase().split(" ");
-		if (split1.length != split2.length) return false;
-		for (int i = 0; i < split1.length; i++) {
-			if (StringUtils.equals(split1[i], split2[i])) {
-				// Names match, continue 
-				continue;
-			} else if ((split1[i].contains(".") || split2[i].contains("."))
-					&& split1[i].charAt(0) == split2[i].charAt(0)) {
-				// One of the names seems to be an abbreviation, check the initials...
-				continue;
-			} else {
-				// No match found
-				return false;
+	private Person searchAuthorByEmail(Author author) throws MigrationException {
+		List<Person> result = findPersons(author.getEmail());
+		Person person = null;
+		if (result.size() > 0) {
+			person = result.get(0);
+			if (person.getEmails().contains(author.getEmail().toLowerCase())) {
+				// @formatter:off
+				Double maxSimilarity = getMaxSignatureNameSimilarity(author, person);
+				if (maxSimilarity > NAME_SIMILARITY_THRESHOLD_WHEN_MAIL_MATCHES) {
+					logger.debug(MessageFormat.format(
+							"Exact match found:\n"
+									+ " - Searched signature: {0}\n"
+									+ " - Found author:    {1}", 
+									author, person));
+					return person;
+				} else {
+					String message = MessageFormat.format(
+							"E-mail match found, but name similarity ({0}%) is below the threshold ({1}%):\n"
+									+ " - Searched signature: {2}\n"
+									+ " - Found author:       {3}", 
+									maxSimilarity, NAME_SIMILARITY_THRESHOLD_WHEN_MAIL_MATCHES, author, person);
+					if (isInteractive()) {
+						System.out.println(message);
+						if (readConfirmation("Is it a match?")) {
+							logger.info(MessageFormat.format(
+									"Approximate match found with similarity ({0}%) below the threshold ({1}%), but manually overriden:\n"
+											+ " - Searched signature: {2}\n"
+											+ " - Found author:       {3}", 
+											maxSimilarity, NAME_SIMILARITY_THRESHOLD_WHEN_MAIL_MATCHES, author, person));
+							return person;
+						}
+					} else {
+						logger.warn(message);
+					}
+				}
+				// @formatter:on
 			}
 		}
-		return true;
+		return null;
 	}
+
+	private Person searchAuthorByName(Author author) throws MigrationException {
+		List<Person> result = findPersons(author.getFullName());
+		Person person = null;
+		if (result.size() > 0) {
+			person = result.get(0);
+			// @formatter:off
+			Double maxSimilarity = getMaxSignatureNameSimilarity(author, person);
+			if (maxSimilarity > NAME_SIMILARITY_THRESHOLD_WHEN_NAME_MATCHES) {
+				logger.debug(MessageFormat.format(
+						"Exact match found:\n"
+								+ " - Searched signature: {0}\n"
+								+ " - Found author:    {1}", 
+								author, person));
+				return person;
+			} else {
+				String message = MessageFormat.format(
+						"Name match found, but name similarity ({0}%) is below the threshold ({1}%):\n"
+								+ " - Searched signature: {2}\n"
+								+ " - Found author:       {3}", 
+								maxSimilarity, NAME_SIMILARITY_THRESHOLD_WHEN_NAME_MATCHES, author, person);
+				if (isInteractive()) {
+					System.out.println(message);
+					if (readConfirmation("Is it a match?")) {
+						logger.info(MessageFormat.format(
+								"Approximate match found with similarity ({0}%) below the threshold ({1}%), but manually overriden:\n"
+										+ " - Searched signature: {2}\n"
+										+ " - Found author:       {3}", 
+										maxSimilarity, NAME_SIMILARITY_THRESHOLD_WHEN_NAME_MATCHES, author, person));
+						return person;
+					}
+				} else {
+					logger.warn(message);
+				}
+			}
+			// @formatter:on
+		}
+		return null;
+	}
+	
+	private boolean readConfirmation(String message) {
+		Toolkit.getDefaultToolkit().beep();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		try {
+			do {
+				System.out.println(message + " [y/N]: ");
+				switch (reader.readLine()) {
+				case "Y":
+				case "y":
+					return true;
+				case "":
+				case "N":
+				case "n":
+					return false;
+				}
+			} while (true);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private Double getMaxSignatureNameSimilarity(Author author, Person person) {
+		List<String> allAuthorNames = new ArrayList<>(person.getNameVariants());
+		allAuthorNames.add(person.getFullName());
+		Optional<Double> maxSimilarity = allAuthorNames.stream().map(variant -> SimpleNameMatcher.compareNamesSafe(author.getFullName(), variant))
+				.max(Comparator.naturalOrder());
+		return maxSimilarity.orElse(0.0d);
+	}
+	
+//	private Person findPersonFromAuthor(Author author) throws MigrationException {
+//		Person result = null;
+//		List<Person> found = null;
+//		String messageTemplate = "";
+//		if (!isInteractive()) {
+//			if (author.getEmail() != null) {
+//				found = findPersons(author.getEmail());
+//				if (!found.isEmpty()) {
+//					for (String foundEmail : found.get(0).getEmails()) {
+//						// Try to match the Person using any of the saved e-mails...
+//						if (StringUtils.equalsIgnoreCase(author.getEmail(), foundEmail)) {
+//							// ... but make sure that the names have at least some similarity
+//							for (int i = 0; i < found.size(); i++) {
+//								String name1 = author.getFullName();
+//								String name2 = found.get(i).getFullName();
+//								float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
+//								if (Math.signum(normalizedDistance) == 0.0f) {
+//									messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//									result = found.get(i);
+//									break;
+//								} else if (normalizedDistance < 0.1f) {
+//									messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//									result = found.get(i);
+//									break;
+//								} else if (normalizedDistance < 0.3f) {
+//									messageTemplate = "[!PERSON] Approximate match (< 0.3) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//									result = found.get(i);
+//									break;
+//								} else if (normalizedDistance < 0.7f) {
+//									messageTemplate = "[!PERSON] Approximate match (< 0.7) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//									result = found.get(i);
+//									break;
+//								} else {
+//									messageTemplate = "[!PERSON] Approximate match (>= 0.7) found (but not assigning) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//									logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
+//											found.get(i).getFamilyName(), found.get(i).getGivenName(), StringUtils.join(found.get(i).getEmails(), ", ")));
+//									result = null;
+//									continue;
+//								}
+//							}
+//						} else {
+//							result = null;
+//						}
+//					}
+//				}
+//			}
+//			if (result == null) {
+//				// Try to match the Person using the name 
+//				found = findPersons(author.getFullName());
+//				Optional<Person> match = found.stream().filter(f -> StringUtils.equalsIgnoreCase(author.getFullName(), f.getFullName())).findAny();
+//				if (match.isPresent()) {
+//					messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
+//					result = match.get();
+//				} else {
+//					for (int i = 0; i < found.size(); i++) {
+//						String name1 = author.getFullName();
+//						List<String> names2 = new ArrayList<>();
+//						names2.add(found.get(i).getFullName());
+//						names2.addAll(found.get(i).getNameVariants().stream().map(n -> n.split(", *")[1] + " " + n.split(", *")[0]).collect(Collectors.toList())); 
+//						for (String name2 : names2) {
+//						float normalizedDistance = normalizedLevenshteinDistance(name1, name2);
+//							if (Math.signum(normalizedDistance) == 0.0f) {
+//								messageTemplate = "[!PERSON] Exact match found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//								result = found.get(i);
+//								break;
+//							} else if (normalizedDistance < 0.1f) {
+//								messageTemplate = "[!PERSON] Almost exact match (< 0.1) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//								result = found.get(i);
+//								break;
+//							} else if (normalizedDistance < 0.35f) {
+//								messageTemplate = "[!PERSON] Approximate match (< 0.35) found for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, {4} ({5})''";
+//								result = found.get(i);
+//								break;
+//							} else {
+//								messageTemplate = "[!PERSON] Approximate match (>= 0.35) found (but not assigning, no e-mail) for ''{0}, {1}'' with e-mail ''{2}'': ''{3}, ({4})''";
+//								logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
+//										name2, StringUtils.join(found.get(i).getEmails(), ", ")));
+//								result = null;
+//								continue;
+//							}
+//						}
+//					}
+//				}
+//			}
+//		} else {
+//			// Interactive way, try to find an exact match in author name
+//			found = findPersons(author.getFullName().replaceAll("\\W+", " "));
+//			if (found.isEmpty() && StringUtils.isNotBlank(author.getEmail())) {
+//				// If nothing is found, try using th e-mail...
+//				found = findPersons(author.getEmail());
+//			}
+//			if (found.isEmpty() && author.getLastName().split("[ -]+").length > 1) {
+//				// If nothing is found, try relaxing the surnames
+//				found = findPersons(author.getFirstName() + " " + author.getLastName().split("[ -]+")[0]);
+//			}
+//			// Try to do an exact match...
+//			Optional<Person> match = found.stream().filter(
+//					f -> StringUtils.equalsIgnoreCase(StringUtils.stripAccents(author.getFullName()), StringUtils.stripAccents(f.getFullName()))).findAny();
+//			if (match.isPresent()) {
+//				messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
+//				result = match.get();
+//			} else if (!found.isEmpty()){
+//				// Try to match with any of the alternative names but making sure at least one e-mail matches
+//				for (Person person : found) {
+//					if (author.getEmail() != null
+//						&&
+//						person.getNameVariants().stream()
+//							.filter(v -> StringUtils.equalsIgnoreCase(
+//									StringUtils.stripAccents(author.getLastName() + ", " + author.getFirstName()), StringUtils.stripAccents(v))).findAny()
+//							.isPresent()
+//						&& 
+//						person.getEmails().stream()
+//							.filter(e -> StringUtils.equalsIgnoreCase(author.getEmail(), e)).findAny()
+//							.isPresent()) {
+//						messageTemplate = "[!PERSON] Exact match found for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
+//						result = person;
+//						break;
+//					}
+//				}
+//				if (result == null) {
+//					// We were not lucky, ask the user....
+//					Integer selection;
+//					do {
+//						selection = null;
+//						System.out.println(MessageFormat.format("Unable to find an exact match for:\n    {0}, {1} <{2}> ({3})", 
+//								author.getLastName(), author.getFirstName(), author.getEmail(), author.getAffiliation()));
+//						System.out.println("Possible candidates are:");
+//						System.out.println("[0] None");
+//						for (int i = 0; i < found.size(); i++) {
+//							System.out.println(MessageFormat.format("[{0}] {1}, {2} <{3}> ({4})", 
+//									i+1, found.get(i).getFamilyName(), found.get(i).getGivenName(), 
+//									StringUtils.join(found.get(i).getEmails(), ", ") , StringUtils.join(found.get(i).getAffiliations(), ", ")));
+//						}
+//						Toolkit.getDefaultToolkit().beep();
+//						System.out.print(MessageFormat.format("Which one corresponds to {0}, {1}? ", 
+//								author.getLastName(), author.getFirstName()));
+//						BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+//						try {
+//							selection = Integer.valueOf(reader.readLine());
+//						} catch (Exception e) {
+//							selection = null;
+//						}
+//					} while (selection == null || selection < 0 || selection > found.size());
+//					if (selection > 0) {
+//						result = found.get(selection - 1);
+//						messageTemplate = "[!PERSON] Manually set match for name ''{0}, {1}'' (''{2}''): ''{3}, {4} ({5})''";
+//					}
+//				}
+//			}
+//
+//		}
+//		if (result == null) {
+//			messageTemplate = "[!PERSON] No match found for ''{0}, {1}'' (''{2}'')";
+//		}
+//		logger.info(MessageFormat.format(messageTemplate, author.getLastName(), author.getFirstName(), author.getEmail(),
+//				result != null ? result.getFamilyName() : "", result != null ? result.getGivenName() : "", result != null ? StringUtils.join(result.getEmails(), ", ") : ""));
+//		return result;
+//	}
+//
+//	private boolean firstNameMatch(String name1, String name2) {
+//		String[] split1 = name1.toLowerCase().split(" ");		
+//		String[] split2 = name1.toLowerCase().split(" ");
+//		if (split1.length != split2.length) return false;
+//		for (int i = 0; i < split1.length; i++) {
+//			if (StringUtils.equals(split1[i], split2[i])) {
+//				// Names match, continue 
+//				continue;
+//			} else if ((split1[i].contains(".") || split2[i].contains("."))
+//					&& split1[i].charAt(0) == split2[i].charAt(0)) {
+//				// One of the names seems to be an abbreviation, check the initials...
+//				continue;
+//			} else {
+//				// No match found
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
 	
 	private List<Person> findPersons(String query) throws  MigrationException {
 		List<Person> result = new ArrayList<>();
