@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class Author {
@@ -98,7 +99,7 @@ public class Author {
 	
 	public Author(String fullname, String email, String affiliation) {
 		this.email = StringUtils.trimToNull(email);
-		this.affiliation = StringUtils.trimToNull(affiliation);
+		this.affiliation = RegExUtils.replaceAll(StringUtils.trimToNull(affiliation), " - ([\\w\\s]+?)$", ", $1");
 		parseName(fullname);
 	}
 
