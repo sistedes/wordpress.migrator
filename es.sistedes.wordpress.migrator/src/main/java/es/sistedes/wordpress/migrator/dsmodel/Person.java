@@ -21,7 +21,6 @@ public class Person extends Item {
 	}
 	
 	public Person(String name, String surname, String affiliation, String email) {
-//		setTitle(surname + ", " + name);
 		setGivenName(name);
 		setFamilyName(surname);
 		addAffiliation(affiliation);
