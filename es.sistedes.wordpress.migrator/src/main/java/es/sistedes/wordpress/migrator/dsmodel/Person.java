@@ -80,4 +80,11 @@ public class Person extends Item {
 	public static Person fromHttpEntity(HttpEntity entity) throws ParseException, IOException {
 		return new Gson().fromJson(EntityUtils.toString(entity, StandardCharsets.UTF_8), Person.class);
 	}
+	
+	@Override
+	public String toString() {
+		return getFamilyName() + ", " + getGivenName() + " " + getEmails().stream().collect(Collectors.joining(", ", "<", ">")) + " "
+				+ getAffiliations().stream().collect(Collectors.joining("; ", "(", ")"));
+	}
+
 }

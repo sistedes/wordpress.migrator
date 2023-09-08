@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.MessageFormat;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -191,6 +192,6 @@ public class Author {
 	
 	@Override
 	public String toString() {
-		return StringUtils.defaultIfBlank(lastName, "<empty>")  + ", " + StringUtils.defaultIfBlank(firstName, "<empty>");
+		return MessageFormat.format("{0}, {1} <{2}> ({3})", getLastName(), getFirstName(), getEmail(), getAffiliation());
 	}
 }
