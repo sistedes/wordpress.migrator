@@ -45,7 +45,7 @@ public class Person extends Item {
 	}
 	
 	public String getFullName() {
-		return getGivenName() + " " + getFamilyName();
+		return getFamilyName() + ", " + getGivenName();
 	}
 	
 	public List<String> getNameVariants() {

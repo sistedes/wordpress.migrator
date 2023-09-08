@@ -1023,7 +1023,7 @@ public class Migrator {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		try {
 			do {
-				System.out.println(message + " [y/N]: ");
+				System.out.print(message + " [y/N]: ");
 				switch (reader.readLine()) {
 				case "Y":
 				case "y":
@@ -1654,6 +1654,8 @@ public class Migrator {
 	private static void setHandle(String newHandle, String targetUrl, String prefix, PublicKeyAuthenticationInfo auth) throws HandleException, MigrationException  {
 		logger.info("[>HDL] Handle created: '" + newHandle + "' -> '" + targetUrl + "'");
 
+		if (true) return;
+		
 		HandleResolver resolver = new HandleResolver();
         
         int timestamp = (int) (System.currentTimeMillis() / 1000);

@@ -179,7 +179,7 @@ public class Author {
 	}
 	
 	public String getFullName() {
-		return firstName + " " + lastName;
+		return lastName + ", " + firstName;
 	}
 	
 	public String getEmail() {
