@@ -21,8 +21,8 @@ public class Metadata {
 													.set(FlexmarkHtmlConverter.TYPOGRAPHIC_SMARTS, false)
 													.set(FlexmarkHtmlConverter.SKIP_CHAR_ESCAPE, true);
 	
-	public volatile static DateFormat DATE_FORMAT_SIMPLE_W_HOUR = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-	public volatile static DateFormat DATE_FORMAT_SIMPLE = new SimpleDateFormat("yyyy-MM-dd");
+//	public volatile static DateFormat DATE_FORMAT_SIMPLE_W_HOUR = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+//	public volatile static DateFormat DATE_FORMAT_SIMPLE = new SimpleDateFormat("yyyy-MM-dd");
 	public volatile static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:00'Z'");
 	
 	// BEGIN: JSON fields
@@ -259,7 +259,6 @@ public class Metadata {
 		}).orElse(null);
 	}
 
-	@SuppressWarnings("deprecation")
 	public void setDate(Date date) {
 		if (date == null) return;
 		this.datesAvailable.clear();
@@ -267,22 +266,23 @@ public class Metadata {
 		this.datesAccessioned.clear();
 		this.datesAvailable.add(new MetadataEntry(DATE_FORMAT.format(date)));
 		this.datesAccessioned.add(new MetadataEntry(DATE_FORMAT.format(date)));
-		if (date.getHours() == 0 && date.getMinutes() == 0) {
-			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
-		} else {
-			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
-		}
+		this.datesIssued.add(new MetadataEntry(DATE_FORMAT.format(date)));
+//		if (date.getHours() == 0 && date.getMinutes() == 0) {
+//			this.datesIssued.add(new MetadataEntry(DATE_FORMAT.format(date)));
+//		} else {
+//			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
+//		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public void setIssuedDate(Date date) {
 		if (date == null) return;
 		this.datesIssued.clear();
-		if (date.getHours() == 0 && date.getMinutes() == 0) {
-			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
-		} else {
-			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
-		}
+		this.datesIssued.add(new MetadataEntry(DATE_FORMAT.format(date)));
+//		if (date.getHours() == 0 && date.getMinutes() == 0) {
+//			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
+//		} else {
+//			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
+//		}
 	}
 
 	public String getIsFormatOf() {
