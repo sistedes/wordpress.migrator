@@ -2,6 +2,8 @@ package es.sistedes.wordpress.migrator.dsmodel;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Calendar;
+import java.util.Date;
 
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
@@ -19,7 +21,7 @@ public class Community extends DSpaceEntity {
 	
 	public static Community from(Site site, DocumentsLibrary library) {
 		return new Community(library.getLibraryName(), library.getDescription(), library.getDescription(),
-				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/SISTEDES");
+				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/SISTEDES", Calendar.getInstance().getTime());
 	}
 	
 	public static Community from(Site site, Conference conference) {
@@ -32,7 +34,7 @@ public class Community extends DSpaceEntity {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
 		return new Community(conference.getTitle(), description, _abstract,
-				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/" + conference.getAcronym());
+				site.getBaseUri().replaceAll("https?://hdl.handle.net/", "") + "/" + conference.getAcronym(), Calendar.getInstance().getTime());
 	}
 	
 	public static Community from(Community community, Edition edition) {
@@ -49,14 +51,15 @@ public class Community extends DSpaceEntity {
 		} catch (IndexOutOfBoundsException e) {
 			// Ignore if we can't extract the first paragraph using substrings...
 		};
-		return new Community(edition.getTitle(), description, _abstract, community.getSistedesIdentifier() + "/" + String.valueOf(edition.getYear()));
+		return new Community(edition.getTitle(), description, _abstract, community.getSistedesIdentifier() + "/" + String.valueOf(edition.getYear()), edition.getDate());
 	}
 	
-	private Community(String title, String description, String _abstract, String sistedesId) {
+	private Community(String title, String description, String _abstract, String sistedesId, Date date) {
 		setTitle(title); 
 		setDescription(description);
 		setAbstract(_abstract);
 		setSistedesIdentifier(sistedesId);
+		metadata.setIssuedDate(date);
 	}
 	
 	public static Community fromHttpEntity(HttpEntity entity) throws ParseException, IOException {

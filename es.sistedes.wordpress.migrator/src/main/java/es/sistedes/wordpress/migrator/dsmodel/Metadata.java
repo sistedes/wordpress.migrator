@@ -274,6 +274,17 @@ public class Metadata {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
+	public void setIssuedDate(Date date) {
+		if (date == null) return;
+		this.datesIssued.clear();
+		if (date.getHours() == 0 && date.getMinutes() == 0) {
+			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE.format(date)));
+		} else {
+			this.datesIssued.add(new MetadataEntry(DATE_FORMAT_SIMPLE_W_HOUR.format(date)));
+		}
+	}
+
 	public String getIsFormatOf() {
 		return isFormatOf.stream().findFirst().map(e ->  e.getValue()).orElse(null);
 	}

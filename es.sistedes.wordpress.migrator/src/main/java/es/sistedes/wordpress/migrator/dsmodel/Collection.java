@@ -63,7 +63,7 @@ public class Collection extends DSpaceEntity {
 	}
 
 	protected void setDate(Date date) {
-		this.metadata.setDate(date);
+		this.metadata.setIssuedDate(date);
 	}
 
 	public static Collection fromHttpEntity(HttpEntity entity) throws ParseException, IOException {
